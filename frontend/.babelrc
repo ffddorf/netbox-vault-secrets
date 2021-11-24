@@ -1,0 +1,26 @@
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": "last 2 versions and not dead and not ie 11"
+      }
+    ],
+    [
+      "@babel/preset-typescript",
+      {
+        "jsxPragma": "h",
+        "jsxPragmaFrag": "Fragment"
+      }
+    ]
+  ],
+  "plugins": [
+    [
+      "@babel/plugin-transform-react-jsx",
+      {
+        "pragma": "h",
+        "pragmaFrag": "Fragment"
+      }
+    ]
+  ]
+}
