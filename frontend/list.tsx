@@ -3,10 +3,10 @@ import { useEffect, useState } from "preact/hooks";
 
 import { VaultClient } from "./client";
 
-const Secret: FunctionComponent<{ key: string }> = ({ key }) => {
+const Secret: FunctionComponent<{ id: string }> = ({ id }) => {
   return (
-    <tr key={key}>
-      <td>{key}</td>
+    <tr key={id}>
+      <td>{id}</td>
       <td>User</td>
       <td>Password</td>
       <td class="text-end noprint">
@@ -14,8 +14,8 @@ const Secret: FunctionComponent<{ key: string }> = ({ key }) => {
           <a class="btn btn-warning btn-sm" title="Edit Secret">
             <i class="mdi mdi-pencil"></i>
           </a>
-          <a class="btn btn-danger btn-sm">
-            <i class="mdi mdi-trash-can-outline" title="Delete Secret"></i>
+          <a class="btn btn-danger btn-sm" title="Delete Secret">
+            <i class="mdi mdi-trash-can-outline"></i>
           </a>
         </div>
       </td>
@@ -49,7 +49,7 @@ export const List: FunctionComponent<{ client: VaultClient }> = ({
     <table class="table table-hover">
       <tbody>
         {secretList.map((key) => (
-          <Secret key={key} />
+          <Secret key={key} id={key} />
         ))}
       </tbody>
     </table>
