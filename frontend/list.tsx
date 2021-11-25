@@ -1,26 +1,48 @@
 import { FunctionComponent, h } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
-import { SecretMetadata, VaultClient } from "./client";
+import { SecretData, SecretMetadata, VaultClient } from "./client";
 
-const Secret: FunctionComponent<{ secret: SecretInfo }> = ({ secret }) => {
+const icon = (isRevealed: boolean) =>
+  isRevealed ? "mdi-lock-open" : "mdi-lock";
+const buttonClass = (color: string) => `btn ${color} btn-sm`;
+const buttonColor = (isRevealed: boolean) =>
+  isRevealed ? "btn-danger" : "btn-success";
+
+const Secret: FunctionComponent<{
+  meta: SecretInfo;
+  getSecret: () => Promise<SecretData>;
+}> = ({ meta, getSecret }) => {
+  const [isRevealed, setIsRevealed] = useState(false);
+  const [value, setValue] = useState<string | null>(null);
+  const revealSecret = useCallback(() => {
+    setIsRevealed(!isRevealed);
+    if (!isRevealed && !value) {
+      getSecret().then((data) => setValue(data.data.password || null));
+    }
+  }, [getSecret, isRevealed, value]);
+
   return (
     <tr>
-      <td>{secret.label}</td>
-      <td>{secret.username}</td>
-      <td>**************</td>
+      <td>{meta.label}</td>
+      <td>{meta.username}</td>
+      <td class={isRevealed ? "" : "text-muted"}>
+        {isRevealed && value ? value : "***********"}
+      </td>
       <td class="text-end noprint">
-        <div class="btn-group" role="group">
-          <a class="btn btn-primary btn-sm" title="Reveal Secret">
-            <i class="mdi mdi-eye"></i>
-          </a>
-          <a class="btn btn-warning btn-sm" title="Edit Secret">
-            <i class="mdi mdi-pencil"></i>
-          </a>
-          <a class="btn btn-danger btn-sm" title="Delete Secret">
-            <i class="mdi mdi-trash-can-outline"></i>
-          </a>
-        </div>
+        <a
+          class={buttonClass(buttonColor(isRevealed))}
+          title="Reveal Secret"
+          onClick={revealSecret}
+        >
+          <i class={`mdi ${icon(isRevealed)}`}></i>
+        </a>
+        <a class={buttonClass("btn-warning")} title="Edit Secret">
+          <i class="mdi mdi-pencil"></i>
+        </a>
+        <a class={buttonClass("btn-danger")} title="Delete Secret">
+          <i class="mdi mdi-trash-can-outline"></i>
+        </a>
       </td>
     </tr>
   );
@@ -89,7 +111,11 @@ export const List: FunctionComponent<{
     <table class="table table-hover">
       <tbody>
         {secretList.map((secret) => (
-          <Secret key={secret.id} secret={secret} />
+          <Secret
+            key={secret.id}
+            meta={secret}
+            getSecret={() => client.secretData(`netbox/${path}/${secret.id}`)}
+          />
         ))}
       </tbody>
     </table>

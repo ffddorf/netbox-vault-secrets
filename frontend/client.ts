@@ -47,6 +47,17 @@ export interface SecretMetadata {
   >;
 }
 
+export interface SecretData {
+  data: Record<string, string>;
+  metadata: {
+    created_time: string;
+    custom_metadata: Record<string, string>;
+    deletion_time: string | "";
+    destroyed: boolean;
+    version: number;
+  };
+}
+
 // removes leading and trailing slashes
 const trimPath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
 
@@ -94,5 +105,11 @@ export class VaultClient {
     const reqPath = `/v1/secret/metadata/${trimPath(path)}`;
     const meta: WrappedData<SecretMetadata> = await this.request(reqPath);
     return meta.data;
+  }
+
+  async secretData(path: string): Promise<SecretData> {
+    const reqPath = `/v1/secret/data/${trimPath(path)}`;
+    const data: WrappedData<SecretData> = await this.request(reqPath);
+    return data.data;
   }
 }
