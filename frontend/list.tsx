@@ -1,7 +1,7 @@
 import { FunctionComponent, h } from "preact";
 import { useEffect, useState } from "preact/hooks";
 
-import { vaultRequest } from "./client";
+import { VaultClient } from "./client";
 
 const Secret: FunctionComponent<{ key: string }> = ({ key }) => {
   return (
@@ -29,14 +29,14 @@ interface SecretList {
   };
 }
 
-export const List: FunctionComponent<{ token: string }> = ({ token }) => {
+export const List: FunctionComponent<{ client: VaultClient }> = ({
+  client,
+}) => {
   const [secretList, updateSecretList] = useState<string[]>([]);
 
   useEffect(() => {
-    vaultRequest<SecretList>(
-      "/v1/secret/metadata/netbox/device/1/?list=true",
-      token
-    )
+    client
+      .listSecrets("netbox/device/1")
       .then((m) => updateSecretList(m.data.keys))
       .catch(() => updateSecretList([]));
   }, []);

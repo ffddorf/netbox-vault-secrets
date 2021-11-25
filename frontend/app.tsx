@@ -1,17 +1,18 @@
 import { FunctionComponent, h, render, Fragment } from "preact";
 import { useState } from "preact/hooks";
+import { VaultClient } from "./client";
 
 import { List } from "./list";
 import { Login } from "./login";
 
 const App: FunctionComponent<{}> = (props) => {
-  const [token, setToken] = useState<string | null>(null);
+  const [client, setClient] = useState<VaultClient | null>(null);
 
-  if (token === null) {
-    return <Login handleLogin={(token) => setToken(token)} />;
+  if (client === null) {
+    return <Login handleLogin={setClient} />;
   }
 
-  return <List token={token} />;
+  return <List client={client} />;
 };
 
 // following is render boilerplate

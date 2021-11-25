@@ -1,19 +1,23 @@
 import { FunctionComponent, h, Fragment } from "preact";
 import { useCallback, useState } from "preact/hooks";
 
-import { vaultRequest } from "./client";
+import { VaultClient } from "./client";
 import { Modal } from "./modal";
 
-export const Login: FunctionComponent<{ handleLogin: (t: string) => void }> = ({
-  handleLogin,
-}) => {
+const VAULT_BASE_URL = "http://localhost:8082/";
+
+export const Login: FunctionComponent<{
+  handleLogin: (client: VaultClient) => void;
+}> = ({ handleLogin }) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState(null);
 
   const handleTokenLogin = useCallback(() => {
-    vaultRequest("/v1/auth/token/lookup-self", tokenInput).then(() =>
-      handleLogin(tokenInput)
-    );
+    const client = new VaultClient(VAULT_BASE_URL, tokenInput);
+    client
+      .tokenLookup()
+      .then(() => handleLogin(client))
+      .catch(console.error);
   }, [tokenInput, handleLogin]);
 
   return (
