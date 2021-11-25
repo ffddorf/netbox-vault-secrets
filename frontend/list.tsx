@@ -37,7 +37,7 @@ export const List: FunctionComponent<{ client: VaultClient }> = ({
   useEffect(() => {
     client
       .listSecrets("netbox/device/1")
-      .then((m) => updateSecretList(m.data.keys))
+      .then((m) => updateSecretList(m.keys))
       .catch(() => updateSecretList([]));
   }, []);
 

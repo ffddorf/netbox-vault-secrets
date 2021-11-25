@@ -1,31 +1,31 @@
 export type HTTPMethod = "GET" | "POST";
 
+interface WrappedData<T> {
+  data: T;
+}
+
 export interface TokenLookupSelf {
-  data: {
-    accessor: string;
-    creation_time: number;
-    creation_ttl: number;
-    display_name: string;
-    entity_id: string;
-    expire_time: string;
-    explicit_max_ttl: number;
-    id: string;
-    identity_policies: string[];
-    issue_time: string;
-    meta: object;
-    num_uses: number;
-    orphan: boolean;
-    path: string;
-    policies: string[];
-    renewable: boolean;
-    ttl: number;
-  };
+  accessor: string;
+  creation_time: number;
+  creation_ttl: number;
+  display_name: string;
+  entity_id: string;
+  expire_time: string;
+  explicit_max_ttl: number;
+  id: string;
+  identity_policies: string[];
+  issue_time: string;
+  meta: object;
+  num_uses: number;
+  orphan: boolean;
+  path: string;
+  policies: string[];
+  renewable: boolean;
+  ttl: number;
 }
 
 export interface ListSecrets {
-  data: {
-    keys: string[];
-  };
+  keys: string[];
 }
 
 export class VaultClient {
@@ -56,15 +56,16 @@ export class VaultClient {
   }
 
   async tokenLookup(): Promise<TokenLookupSelf> {
-    let info: TokenLookupSelf = await this.request(
+    const info: WrappedData<TokenLookupSelf> = await this.request(
       "/v1/auth/token/lookup-self"
     );
-    return info;
+    return info.data;
   }
 
   async listSecrets(path: string): Promise<ListSecrets> {
     const cleanPath = path.replace(/^\/+|\/+$/g, ""); // trims leading or trailing slashes
     const reqPath = `/v1/secret/metadata/${cleanPath}/?list=true`;
-    return this.request(reqPath);
+    const secrets: WrappedData<ListSecrets> = await this.request(reqPath);
+    return secrets.data;
   }
 }
