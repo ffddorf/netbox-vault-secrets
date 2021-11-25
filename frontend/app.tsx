@@ -12,7 +12,7 @@ const App: FunctionComponent<{}> = (props) => {
     return <Login handleLogin={setClient} />;
   }
 
-  return <List client={client} />;
+  return <List path={"device/1"} client={client} />;
 };
 
 // following is render boilerplate

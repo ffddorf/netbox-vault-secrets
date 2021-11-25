@@ -42,14 +42,14 @@ const batch = (list: string[], batchSize: number): string[][] => {
 
 const gatherSecrets =
   (client: VaultClient, updateSecretList: (list: SecretInfo[]) => void) =>
-  async (id: string) => {
+  async (path: string) => {
     try {
-      const { keys } = await client.listSecrets(`netbox/device/${id}`);
+      const { keys } = await client.listSecrets(`netbox/${path}`);
       const results: SecretMetadata[] = [];
       // fetch batches of 5
       for (const set of batch(keys, 5)) {
         const items = await Promise.all(
-          set.map((key) => client.secretMetadata(`netbox/device/${id}/${key}`))
+          set.map((key) => client.secretMetadata(`netbox/${path}/${key}`))
         );
         results.push(...items);
       }
@@ -65,9 +65,10 @@ const gatherSecrets =
     }
   };
 
-export const List: FunctionComponent<{ client: VaultClient | null }> = ({
-  client,
-}) => {
+export const List: FunctionComponent<{
+  path: string;
+  client: VaultClient | null;
+}> = ({ client, path }) => {
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
 
   const fetchSecrets = useMemo(
@@ -76,9 +77,9 @@ export const List: FunctionComponent<{ client: VaultClient | null }> = ({
   );
   useEffect(() => {
     if (fetchSecrets) {
-      fetchSecrets("1");
+      fetchSecrets(path);
     }
-  }, [fetchSecrets]);
+  }, [fetchSecrets, path]);
 
   if (secretList.length === 0) {
     return <div class="text-muted">None</div>;
