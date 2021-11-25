@@ -28,6 +28,28 @@ export interface ListSecrets {
   keys: string[];
 }
 
+export interface SecretMetadata {
+  cas_required: boolean;
+  created_time: string;
+  current_version: number;
+  delete_version_after: string;
+  max_versions: number;
+  oldest_version: number;
+  updated_time: string;
+  custom_metadata: Record<string, string>;
+  versions: Record<
+    string,
+    {
+      created_time: string;
+      deletion_time: string | "";
+      destroyed: boolean;
+    }
+  >;
+}
+
+// removes leading and trailing slashes
+const trimPath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
+
 export class VaultClient {
   constructor(private base_url: string, private token: string) {}
 
@@ -63,9 +85,14 @@ export class VaultClient {
   }
 
   async listSecrets(path: string): Promise<ListSecrets> {
-    const cleanPath = path.replace(/^\/+|\/+$/g, ""); // trims leading or trailing slashes
-    const reqPath = `/v1/secret/metadata/${cleanPath}/?list=true`;
+    const reqPath = `/v1/secret/metadata/${trimPath(path)}/?list=true`;
     const secrets: WrappedData<ListSecrets> = await this.request(reqPath);
     return secrets.data;
+  }
+
+  async secretMetadata(path: string): Promise<SecretMetadata> {
+    const reqPath = `/v1/secret/metadata/${trimPath(path)}`;
+    const meta: WrappedData<SecretMetadata> = await this.request(reqPath);
+    return meta.data;
   }
 }
