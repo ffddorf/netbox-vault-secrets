@@ -9,15 +9,19 @@ const VAULT_BASE_URL = "http://localhost:8082/";
 export const Login: FunctionComponent<{
   handleLogin: (client: VaultClient) => void;
 }> = ({ handleLogin }) => {
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [tokenInput, setTokenInput] = useState(null);
+  const [isModalOpen, setModalOpen] = useState<boolean>(false);
+  const [tokenInput, setTokenInput] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleTokenLogin = useCallback(() => {
     const client = new VaultClient(VAULT_BASE_URL, tokenInput);
     client
       .tokenLookup()
-      .then(() => handleLogin(client))
-      .catch(console.error);
+      .then(() => {
+        handleLogin(client);
+        setLoginError(null);
+      })
+      .catch((e) => setLoginError(e.message || e.toString()));
   }, [tokenInput, handleLogin]);
 
   return (
@@ -42,6 +46,11 @@ export const Login: FunctionComponent<{
               Please provide a valid Vault token.
             </small>
           </div>
+          {loginError && (
+            <div class="mt-3 alert alert-danger" role="alert">
+              {loginError}
+            </div>
+          )}
         </Modal>
       )}
       <a class="btn btn-primary" onClick={() => setModalOpen(true)}>
