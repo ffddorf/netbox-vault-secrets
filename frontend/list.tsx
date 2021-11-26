@@ -38,14 +38,14 @@ const Secret: FunctionComponent<{
           onClick={revealSecret}
         >
           <i class={`mdi ${icon(isRevealed)}`}></i>
-        </a>
+        </a>{" "}
         <a
           class={buttonClass("btn-warning")}
           title="Edit Secret"
           onClick={handleEdit}
         >
           <i class="mdi mdi-pencil"></i>
-        </a>
+        </a>{" "}
         <a class={buttonClass("btn-danger")} title="Delete Secret">
           <i class="mdi mdi-trash-can-outline"></i>
         </a>
