@@ -1,12 +1,15 @@
 import { FunctionComponent, h, render, Fragment } from "preact";
 import { useState } from "preact/hooks";
 import { VaultClient } from "./client";
+import { EditForm } from "./edit";
 
 import { List } from "./list";
 import { Login, logout } from "./login";
 
 const App: FunctionComponent<{}> = (props) => {
   const [client, setClient] = useState<VaultClient | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const entityPath = "device/1";
 
   return (
     <>
@@ -29,7 +32,17 @@ const App: FunctionComponent<{}> = (props) => {
         {client === null ? (
           <Login handleLogin={setClient} />
         ) : (
-          <List path={"device/1"} client={client} />
+          <>
+            <List path={entityPath} client={client} handleEdit={setEditingId} />
+            {editingId && (
+              <EditForm
+                path={entityPath}
+                id={editingId}
+                client={client}
+                handleClose={() => setEditingId(null)}
+              />
+            )}
+          </>
         )}
       </div>
     </>

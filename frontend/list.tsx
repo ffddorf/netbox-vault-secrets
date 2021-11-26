@@ -13,7 +13,8 @@ const buttonColor = (isRevealed: boolean) =>
 const Secret: FunctionComponent<{
   meta: SecretInfo;
   getSecret: () => Promise<SecretData>;
-}> = ({ meta, getSecret }) => {
+  handleEdit: () => void;
+}> = ({ meta, getSecret, handleEdit }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [value, setValue] = useState<string | null>(null);
   const revealSecret = useCallback(() => {
@@ -38,7 +39,11 @@ const Secret: FunctionComponent<{
         >
           <i class={`mdi ${icon(isRevealed)}`}></i>
         </a>
-        <a class={buttonClass("btn-warning")} title="Edit Secret">
+        <a
+          class={buttonClass("btn-warning")}
+          title="Edit Secret"
+          onClick={handleEdit}
+        >
           <i class="mdi mdi-pencil"></i>
         </a>
         <a class={buttonClass("btn-danger")} title="Delete Secret">
@@ -83,7 +88,8 @@ const gatherSecrets =
 export const List: FunctionComponent<{
   path: string;
   client: VaultClient | null;
-}> = ({ client, path }) => {
+  handleEdit: (id: string) => void;
+}> = ({ client, path, handleEdit }) => {
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
 
   const fetchSecrets = useMemo(
@@ -108,6 +114,7 @@ export const List: FunctionComponent<{
             key={secret.id}
             meta={secret}
             getSecret={() => client.secretData(`netbox/${path}/${secret.id}`)}
+            handleEdit={() => handleEdit(secret.id)}
           />
         ))}
       </tbody>
