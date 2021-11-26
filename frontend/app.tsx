@@ -8,11 +8,18 @@ import { Login } from "./login";
 const App: FunctionComponent<{}> = (props) => {
   const [client, setClient] = useState<VaultClient | null>(null);
 
-  if (client === null) {
-    return <Login handleLogin={setClient} />;
-  }
-
-  return <List path={"device/1"} client={client} />;
+  return (
+    <>
+      <h5 class="card-header">Secrets</h5>
+      <div class="card-body">
+        {client === null ? (
+          <Login handleLogin={setClient} />
+        ) : (
+          <List path={"device/1"} client={client} />
+        )}
+      </div>
+    </>
+  );
 };
 
 // following is render boilerplate
