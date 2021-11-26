@@ -17,7 +17,7 @@ const App: FunctionComponent<{}> = (props) => {
         <h5>Secrets</h5>
         {client !== null && (
           <a
-            class="btn btn-outline-secondary"
+            class="btn btn-outline-secondary btn-sm"
             style={{ marginLeft: "auto" }}
             onClick={() => {
               logout();
