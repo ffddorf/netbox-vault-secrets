@@ -47,9 +47,9 @@ export const Login: FunctionComponent<{
             </small>
           </div>
           {loginError && (
-            <div class="mt-3 alert alert-danger" role="alert">
+            <pre class="mt-3 alert alert-danger" role="alert">
               {loginError}
-            </div>
+            </pre>
           )}
         </Modal>
       )}

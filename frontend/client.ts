@@ -82,7 +82,12 @@ export class VaultClient {
 
     const resp = await fetch(url.toString(), init);
     if (!resp.ok) {
-      throw new Error(`Invalid response: ${resp.status}`);
+      let errCause = "";
+      try {
+        const { errors }: { errors: string[] } = await resp.json();
+        errCause = errors.join("\n");
+      } catch (e) {}
+      throw new Error(`${resp.statusText} (${resp.status}):\n${errCause}`);
     }
 
     return resp.json();
