@@ -2,6 +2,7 @@ import { FunctionComponent, h } from "preact";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import { SecretData, SecretMetadata, VaultClient } from "./client";
+import { infoFromMeta, SecretInfo } from "./common";
 
 const icon = (isRevealed: boolean) =>
   isRevealed ? "mdi-lock-open" : "mdi-lock";
@@ -48,12 +49,6 @@ const Secret: FunctionComponent<{
   );
 };
 
-interface SecretInfo {
-  id: string;
-  label: string;
-  username: string;
-}
-
 const batch = (list: string[], batchSize: number): string[][] => {
   const result = [];
   for (let i = 0; i < list.length / batchSize; i++) {
@@ -75,11 +70,9 @@ const gatherSecrets =
         );
         results.push(...items);
       }
-      const secretList: SecretInfo[] = results.map((meta, i) => ({
-        id: keys[i],
-        label: meta.custom_metadata.label || keys[i],
-        username: meta.custom_metadata.username || "",
-      }));
+      const secretList: SecretInfo[] = results.map((meta, i) =>
+        infoFromMeta(keys[i], meta)
+      );
       updateSecretList(secretList);
     } catch (e) {
       console.error(e);
