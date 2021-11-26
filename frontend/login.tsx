@@ -1,28 +1,50 @@
 import { FunctionComponent, h, Fragment } from "preact";
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useEffect, useState } from "preact/hooks";
 
 import { VaultClient } from "./client";
 import { Modal } from "./modal";
 
 const VAULT_BASE_URL = "http://localhost:8082/";
 
+const LOCAL_STORAGE_KEY_TOKEN = "netbox-vault-token";
+
+export const logout = () => localStorage.removeItem(LOCAL_STORAGE_KEY_TOKEN);
+
 export const Login: FunctionComponent<{
   handleLogin: (client: VaultClient) => void;
 }> = ({ handleLogin }) => {
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [tokenInput, setTokenInput] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem(LOCAL_STORAGE_KEY_TOKEN);
+    const client = new VaultClient(VAULT_BASE_URL, savedToken);
+    client
+      .tokenLookup()
+      .then(() => {
+        handleLogin(client);
+      })
+      .catch(logout)
+      .then(() => setIsLoading(false));
+  }, []);
 
   const handleTokenLogin = useCallback(() => {
     const client = new VaultClient(VAULT_BASE_URL, tokenInput);
     client
       .tokenLookup()
       .then(() => {
+        localStorage.setItem(LOCAL_STORAGE_KEY_TOKEN, tokenInput);
         handleLogin(client);
         setLoginError(null);
       })
       .catch((e) => setLoginError(e.message || e.toString()));
   }, [tokenInput, handleLogin]);
+
+  if (isLoading) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <>
