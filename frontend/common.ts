@@ -13,8 +13,3 @@ export const infoFromMeta = (id: string, meta: SecretMetadata): SecretInfo => ({
   username: meta.custom_metadata.username || "",
   version: meta.current_version,
 });
-
-export interface EditOp {
-  id: string;
-  done: (id: string) => void;
-}
