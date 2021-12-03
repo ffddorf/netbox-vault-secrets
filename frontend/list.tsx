@@ -2,7 +2,7 @@ import { FunctionComponent, h } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
 import { SecretData, SecretMetadata, VaultClient } from "./client";
-import { infoFromMeta, SecretInfo } from "./common";
+import { EditOp, infoFromMeta, SecretInfo } from "./common";
 
 const icon = (isRevealed: boolean) =>
   isRevealed ? "mdi-lock-open" : "mdi-lock";
@@ -67,25 +67,25 @@ const batch = (list: string[], batchSize: number): string[][] => {
 };
 
 const gatherSecrets = async (client: VaultClient, path: string) => {
-      const { keys } = await client.listSecrets(`netbox/${path}`);
-      const results: SecretMetadata[] = [];
-      // fetch batches of 5
-      for (const set of batch(keys, 5)) {
-        const items = await Promise.all(
-          set.map((key) => client.secretMetadata(`netbox/${path}/${key}`))
-        );
-        results.push(...items);
-      }
-      const secretList: SecretInfo[] = results.map((meta, i) =>
-        infoFromMeta(keys[i], meta)
-      );
+  const { keys } = await client.listSecrets(`netbox/${path}`);
+  const results: SecretMetadata[] = [];
+  // fetch batches of 5
+  for (const set of batch(keys, 5)) {
+    const items = await Promise.all(
+      set.map((key) => client.secretMetadata(`netbox/${path}/${key}`))
+    );
+    results.push(...items);
+  }
+  const secretList: SecretInfo[] = results.map((meta, i) =>
+    infoFromMeta(keys[i], meta)
+  );
   return secretList;
-  };
+};
 
 export const List: FunctionComponent<{
   path: string;
   client: VaultClient | null;
-  handleEdit: (id: string) => void;
+  handleEdit: (op: EditOp) => void;
 }> = ({ client, path, handleEdit }) => {
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +103,24 @@ export const List: FunctionComponent<{
         });
     }
   }, [client, path]);
+
+  const reload = useCallback(
+    async (id: string) => {
+      const meta = await client.secretMetadata(`netbox/${path}/${id}`);
+      const info = infoFromMeta(id, meta);
+      const index = secretList.findIndex((item) => item.id === id);
+      if (index === -1) {
+        updateSecretList([...secretList, info]);
+      } else {
+        updateSecretList([
+          ...secretList.slice(0, index),
+          info,
+          ...secretList.slice(index + 1),
+        ]);
+      }
+    },
+    [client, secretList]
+  );
 
   if (secretList.length === 0) {
     return <div class="text-muted">None</div>;
@@ -124,7 +142,7 @@ export const List: FunctionComponent<{
             key={secret.id}
             meta={secret}
             getSecret={() => client.secretData(`netbox/${path}/${secret.id}`)}
-            handleEdit={() => handleEdit(secret.id)}
+            handleEdit={() => handleEdit({ id: secret.id, done: reload })}
           />
         ))}
       </tbody>

@@ -1,15 +1,21 @@
 import { FunctionComponent, h, render, Fragment } from "preact";
-import { useState } from "preact/hooks";
-import { VaultClient } from "./client";
-import { EditForm } from "./edit";
+import { useCallback, useState } from "preact/hooks";
 
+import { VaultClient } from "./client";
+import { EditOp, SecretInfo } from "./common";
+import { EditForm } from "./edit";
 import { List } from "./list";
 import { Login, logout } from "./login";
 
 const App: FunctionComponent<{}> = (props) => {
   const [client, setClient] = useState<VaultClient | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingOp, setEditingOp] = useState<EditOp | null>(null);
   const entityPath = "device/1";
+
+  const editEnd = useCallback(() => {
+    editingOp.done(editingOp.id);
+    setEditingOp(null);
+  }, [editingOp]);
 
   return (
     <>
@@ -33,13 +39,17 @@ const App: FunctionComponent<{}> = (props) => {
           <Login handleLogin={setClient} />
         ) : (
           <>
-            <List path={entityPath} client={client} handleEdit={setEditingId} />
-            {editingId && (
+            <List
+              path={entityPath}
+              client={client}
+              handleEdit={setEditingOp}
+            />
+            {editingOp && (
               <EditForm
                 path={entityPath}
-                id={editingId}
+                id={editingOp.id}
                 client={client}
-                handleClose={() => setEditingId(null)}
+                handleClose={editEnd}
               />
             )}
           </>

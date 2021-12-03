@@ -22,7 +22,25 @@ type Action =
   | { type: "SET_INFO"; info: SecretInfo }
   | { type: "PW_FETCH"; data: SecretData }
   | { type: "PW_TOGGLE" }
+  | { type: "PW_UPDATE"; version: number; value: string }
   | { type: "ERROR"; message: string };
+
+const relevantFields: FieldName[] = ["label", "username"];
+
+const anyFieldChanged = (
+  secretInfo: SecretInfo,
+  formFields: Record<FieldName, string>
+): boolean => {
+  for (const key of relevantFields) {
+    if (!(key in formFields)) {
+      continue;
+    }
+    if (secretInfo[key] !== formFields[key]) {
+      return true;
+    }
+  }
+  return false;
+};
 
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
@@ -61,6 +79,19 @@ const reducer = (state: State, action: Action): State => {
         formerPassword: {
           ...state.formerPassword,
           isRevealed: !state.formerPassword.isRevealed,
+        },
+      };
+    }
+    case "PW_UPDATE": {
+      if (!state.formerPassword) {
+        return state;
+      }
+      return {
+        ...state,
+        formerPassword: {
+          ...state.formerPassword,
+          value: action.value,
+          version: action.version,
         },
       };
     }
@@ -146,12 +177,35 @@ export const EditForm: FunctionComponent<{
     }
   }, [client, path, id, formerPassword?.version]);
 
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
+    try {
+      // save metadata
+      if (anyFieldChanged(secretInfo, formFields)) {
+        const payload = {
+          label: formFields.label || secretInfo.label,
+          username: formFields.username || secretInfo.username,
+        };
+        await client.secretMetadataUpdate(`netbox/${path}/${id}`, payload);
+      }
+
     // save password
     if (formFields.password) {
-      // todo
+        const { version } = await client.secretDataUpdate(
+          `netbox/${path}/${id}`,
+          {
+            password: formFields.password,
     }
-  }, [client, formFields]);
+        );
+        dispatch({ type: "PW_UPDATE", version, value: formFields.password });
+      }
+    } catch (e) {
+      dispatch({ type: "ERROR", message: e.message || e.toString() });
+      return;
+    }
+
+    dispatch({ type: "ERROR", message: "" });
+    handleClose();
+  }, [client, formFields, secretInfo, handleClose]);
 
   return (
     <Modal

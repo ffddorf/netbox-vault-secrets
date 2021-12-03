@@ -58,6 +58,28 @@ export interface SecretData {
   };
 }
 
+interface SecretMetadataCreation {
+  max_versions?: number;
+  cas_required?: boolean;
+  delete_version_after?: string;
+  custom_metadata?: Record<string, string>;
+}
+
+interface SecretDataCreation {
+  options?: {
+    cas?: number;
+  };
+  data: Record<string, string>;
+}
+
+export interface SecretCreationResponse {
+  created_time: string;
+  custom_metadata: Record<string, string>;
+  deletion_time: string;
+  destroyed: boolean;
+  version: number;
+}
+
 // removes leading and trailing slashes
 const trimPath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
 
@@ -90,7 +112,9 @@ export class VaultClient {
       throw new Error(`${resp.statusText} (${resp.status}):\n${errCause}`);
     }
 
+    if (resp.status === 200) {
     return resp.json();
+  }
   }
 
   async tokenLookup(): Promise<TokenLookupSelf> {
@@ -116,5 +140,31 @@ export class VaultClient {
     const reqPath = `/v1/secret/data/${trimPath(path)}`;
     const data: WrappedData<SecretData> = await this.request(reqPath);
     return data.data;
+  }
+
+  async secretMetadataUpdate(
+    path: string,
+    meta: Record<string, string>
+  ): Promise<void> {
+    const metaReqPath = `/v1/secret/metadata/${trimPath(path)}`;
+    await this.request<{}, SecretMetadataCreation>(metaReqPath, "POST", {
+      custom_metadata: meta,
+    });
+  }
+
+  async secretDataUpdate(
+    path: string,
+    data: Record<string, string>,
+    version?: number
+  ): Promise<SecretCreationResponse> {
+    const dataReqPath = `/v1/secret/data/${trimPath(path)}`;
+    const creation = await this.request<
+      WrappedData<SecretCreationResponse>,
+      SecretDataCreation
+    >(dataReqPath, "POST", {
+      options: { cas: version },
+      data,
+    });
+    return creation.data;
   }
 }
