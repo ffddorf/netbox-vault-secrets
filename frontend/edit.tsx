@@ -6,6 +6,7 @@ import { Modal } from "./modal";
 
 interface State {
   formFields?: Record<FieldName, string>;
+  valid?: boolean;
   secretInfo?: SecretInfo;
   formerPassword?: {
     version: number;
@@ -27,6 +28,18 @@ type Action =
 
 const relevantFields: FieldName[] = ["label", "username"];
 
+const allFieldsValid = (formFields: Record<FieldName, string>): boolean => {
+  for (const key of relevantFields) {
+    if (!(key in formFields)) {
+      continue;
+    }
+    if (formFields[key] === "") {
+      return false;
+    }
+  }
+  return true;
+};
+
 const anyFieldChanged = (
   secretInfo: SecretInfo,
   formFields: Record<FieldName, string>
@@ -45,12 +58,14 @@ const anyFieldChanged = (
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "FORM_VALUE": {
+      const formFields = {
+        ...state.formFields,
+        [action.name]: action.value,
+      };
       return {
         ...state,
-        formFields: {
-          ...state.formFields,
-          [action.name]: action.value,
-        },
+        valid: allFieldsValid(formFields),
+        formFields,
       };
     }
     case "SET_INFO": {
@@ -148,7 +163,7 @@ export const EditForm: FunctionComponent<{
   client: VaultClient;
   handleClose: () => void;
 }> = ({ path, id, client, handleClose }) => {
-  const [{ error, secretInfo, formFields, formerPassword }, dispatch] =
+  const [{ error, secretInfo, valid, formFields, formerPassword }, dispatch] =
     useReducer(reducer, {});
 
   const errorHandler = useCallback(
@@ -178,6 +193,12 @@ export const EditForm: FunctionComponent<{
   }, [client, path, id, formerPassword?.version]);
 
   const save = useCallback(async () => {
+    // validate
+    if (valid === false) {
+      dispatch({ type: "ERROR", message: "Fields cannot be empty" });
+      return;
+    }
+
     try {
       // save metadata
       if (anyFieldChanged(secretInfo, formFields)) {
@@ -188,13 +209,13 @@ export const EditForm: FunctionComponent<{
         await client.secretMetadataUpdate(`netbox/${path}/${id}`, payload);
       }
 
-    // save password
-    if (formFields.password) {
+      // save password
+      if (formFields.password) {
         const { version } = await client.secretDataUpdate(
           `netbox/${path}/${id}`,
           {
             password: formFields.password,
-    }
+          }
         );
         dispatch({ type: "PW_UPDATE", version, value: formFields.password });
       }
