@@ -16,26 +16,30 @@ const Secret: FunctionComponent<{
   handleEdit: () => void;
 }> = ({ meta, getSecret, handleEdit }) => {
   const [isRevealed, setIsRevealed] = useState(false);
-  const [value, setValue] = useState<string | null>(null);
-  const revealSecret = useCallback(() => {
-    setIsRevealed(!isRevealed);
-    if (!isRevealed && !value) {
-      getSecret().then((data) => setValue(data.data.password || null));
+  const [data, setData] = useState<{
+    value: string;
+    version: number;
+  } | null>(null);
+  useEffect(() => {
+    if (isRevealed && (!data?.value || data?.version !== meta.version)) {
+      getSecret().then(({ data, metadata }) =>
+        setData(data && { value: data.password, version: metadata.version })
+      );
     }
-  }, [getSecret, isRevealed, value]);
+  }, [getSecret, isRevealed, data, meta.version]);
 
   return (
     <tr>
       <td>{meta.label}</td>
       <td>{meta.username}</td>
       <td class={isRevealed ? "" : "text-muted"}>
-        {isRevealed && value ? value : "***********"}
+        {isRevealed && data?.value ? data.value : "***********"}
       </td>
       <td class="text-end noprint">
         <a
           class={buttonClass(buttonColor(isRevealed))}
           title="Reveal Secret"
-          onClick={revealSecret}
+          onClick={() => setIsRevealed(!isRevealed)}
         >
           <i class={`mdi ${icon(isRevealed)}`}></i>
         </a>{" "}
