@@ -1,5 +1,5 @@
 import { FunctionComponent, h } from "preact";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useState } from "preact/hooks";
 
 import { SecretData, SecretMetadata, VaultClient } from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
@@ -62,10 +62,7 @@ const batch = (list: string[], batchSize: number): string[][] => {
   return result;
 };
 
-const gatherSecrets =
-  (client: VaultClient, updateSecretList: (list: SecretInfo[]) => void) =>
-  async (path: string) => {
-    try {
+const gatherSecrets = async (client: VaultClient, path: string) => {
       const { keys } = await client.listSecrets(`netbox/${path}`);
       const results: SecretMetadata[] = [];
       // fetch batches of 5
@@ -78,11 +75,7 @@ const gatherSecrets =
       const secretList: SecretInfo[] = results.map((meta, i) =>
         infoFromMeta(keys[i], meta)
       );
-      updateSecretList(secretList);
-    } catch (e) {
-      console.error(e);
-      updateSecretList([]);
-    }
+  return secretList;
   };
 
 export const List: FunctionComponent<{
@@ -91,19 +84,32 @@ export const List: FunctionComponent<{
   handleEdit: (id: string) => void;
 }> = ({ client, path, handleEdit }) => {
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchSecrets = useMemo(
-    () => (client ? gatherSecrets(client, updateSecretList) : null),
-    [client]
-  );
   useEffect(() => {
-    if (fetchSecrets) {
-      fetchSecrets(path);
+    if (client) {
+      gatherSecrets(client, path)
+        .then((list) => {
+          updateSecretList(list);
+          setError(null);
+        })
+        .catch((e) => {
+          updateSecretList([]);
+          setError(e.message || e.toString());
+        });
     }
-  }, [fetchSecrets, path]);
+  }, [client, path]);
 
   if (secretList.length === 0) {
     return <div class="text-muted">None</div>;
+  }
+
+  if (error) {
+    return (
+      <div class="alert alert-danger" role="alert">
+        {error}
+      </div>
+    );
   }
 
   return (
