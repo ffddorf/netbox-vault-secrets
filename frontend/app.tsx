@@ -31,13 +31,13 @@ const gatherSecrets = async (client: VaultClient, path: string) => {
   return secretList;
 };
 
+const entityPath = "device/1";
+
 const App: FunctionComponent<{}> = (props) => {
   const [client, setClient] = useState<VaultClient | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  const entityPath = "device/1";
 
   useEffect(() => {
     if (client) {

@@ -1,19 +1,18 @@
 import { FunctionComponent, h, Fragment, JSX } from "preact";
-import { useCallback, useEffect, useReducer, useState } from "preact/hooks";
+import { useCallback, useEffect, useReducer } from "preact/hooks";
 import { SecretData, VaultClient } from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
 import { Modal } from "./modal";
 
 interface State {
-  formFields?: Record<FieldName, string>;
+  formFields: Partial<Record<FieldName, string>>;
   valid?: boolean;
   secretInfo?: SecretInfo;
   formerPassword?: {
-    version: number;
     value: string;
     isRevealed: boolean;
   };
-  error?: string;
+  error: string;
 }
 
 type FieldName = "label" | "username" | "password";
@@ -23,12 +22,14 @@ type Action =
   | { type: "SET_INFO"; info: SecretInfo }
   | { type: "PW_FETCH"; data: SecretData }
   | { type: "PW_TOGGLE" }
-  | { type: "PW_UPDATE"; version: number; value: string }
+  | { type: "UPDATE"; info: SecretInfo; value: string }
   | { type: "ERROR"; message: string };
 
 const relevantFields: FieldName[] = ["label", "username"];
 
-const allFieldsValid = (formFields: Record<FieldName, string>): boolean => {
+const allFieldsValid = (
+  formFields: Partial<Record<FieldName, string>>,
+): boolean => {
   for (const key of relevantFields) {
     if (!(key in formFields)) {
       continue;
@@ -42,7 +43,7 @@ const allFieldsValid = (formFields: Record<FieldName, string>): boolean => {
 
 const anyFieldChanged = (
   secretInfo: SecretInfo,
-  formFields: Record<FieldName, string>
+  formFields: Partial<Record<FieldName, string>>
 ): boolean => {
   for (const key of relevantFields) {
     if (!(key in formFields)) {
@@ -75,11 +76,10 @@ const reducer = (state: State, action: Action): State => {
       };
     }
     case "PW_FETCH": {
-      const { data, metadata } = action.data;
+      const { data } = action.data;
       return {
         ...state,
         formerPassword: {
-          version: metadata.version,
           value: data?.password,
           isRevealed: true,
         },
@@ -97,7 +97,7 @@ const reducer = (state: State, action: Action): State => {
         },
       };
     }
-    case "PW_UPDATE": {
+    case "UPDATE": {
       if (!state.formerPassword) {
         return state;
       }
@@ -106,8 +106,8 @@ const reducer = (state: State, action: Action): State => {
         formerPassword: {
           ...state.formerPassword,
           value: action.value,
-          version: action.version,
         },
+        secretInfo: action.info,
       };
     }
     case "ERROR": {
@@ -164,7 +164,7 @@ export const EditForm: FunctionComponent<{
   handleClose: () => void;
 }> = ({ path, id, client, handleClose }) => {
   const [{ error, secretInfo, valid, formFields, formerPassword }, dispatch] =
-    useReducer(reducer, {});
+    useReducer(reducer, { formFields: {}, error: "" });
 
   const errorHandler = useCallback(
     (e) => dispatch({ type: "ERROR", message: e.message || e.toString() }),
@@ -190,7 +190,7 @@ export const EditForm: FunctionComponent<{
     } else {
       dispatch({ type: "PW_TOGGLE" });
     }
-  }, [client, path, id, formerPassword?.version]);
+  }, [client, path, id, secretInfo?.version]);
 
   const save = useCallback(async () => {
     // validate
@@ -203,24 +203,33 @@ export const EditForm: FunctionComponent<{
       // save metadata
       if (anyFieldChanged(secretInfo, formFields)) {
         const payload = {
-          label: formFields.label || secretInfo.label,
-          username: formFields.username || secretInfo.username,
+          label: formFields.label || secretInfo?.label,
+          username: formFields.username || secretInfo?.username,
         };
         await client.secretMetadataUpdate(`netbox/${path}/${id}`, payload);
       }
 
       // save password
       if (formFields.password) {
-        const { version } = await client.secretDataUpdate(
-          `netbox/${path}/${id}`,
-          {
+        const {
+          version,
+          custom_metadata: { label, username },
+        } = await client.secretDataUpdate(`netbox/${path}/${saveId}`, {
             password: formFields.password,
-          }
-        );
-        dispatch({ type: "PW_UPDATE", version, value: formFields.password });
+        });
+        dispatch({
+          type: "UPDATE",
+          value: formFields.password,
+          info: {
+            id: saveId,
+            version,
+            label,
+            username,
+          },
+        });
       }
     } catch (e) {
-      dispatch({ type: "ERROR", message: e.message || e.toString() });
+      errorHandler(e);
       return;
     }
 

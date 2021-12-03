@@ -9,7 +9,7 @@ export interface SecretInfo {
 
 export const infoFromMeta = (id: string, meta: SecretMetadata): SecretInfo => ({
   id: id,
-  label: meta.custom_metadata.label || id,
-  username: meta.custom_metadata.username || "",
+  label: meta.custom_metadata?.label || id,
+  username: meta.custom_metadata?.username || "",
   version: meta.current_version,
 });
