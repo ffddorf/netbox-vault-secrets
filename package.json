@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/ffddorf/netbox-vault-secrets#readme",
   "dependencies": {
+    "lodash.kebabcase": "^4.1.1",
     "preact": "^10.6.0"
   },
   "devDependencies": {

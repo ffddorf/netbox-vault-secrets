@@ -71,9 +71,13 @@ const App: FunctionComponent<{}> = (props) => {
     [client, secretList]
   );
 
-  const editEnd = useCallback(() => {
-    reload(editingId).then(() => setEditingId(null));
-  }, [editingId]);
+  const editEnd = useCallback(
+    async (id?: string) => {
+      await reload(id || editingId);
+      setEditingId(null);
+    },
+    [editingId]
+  );
 
   if (error) {
     return (
@@ -112,7 +116,7 @@ const App: FunctionComponent<{}> = (props) => {
               }
               handleEdit={setEditingId}
             />
-            {editingId && (
+            {editingId !== null && (
               <EditForm
                 path={entityPath}
                 id={editingId}
@@ -122,6 +126,11 @@ const App: FunctionComponent<{}> = (props) => {
             )}
           </>
         )}
+      </div>
+      <div class="card-footer text-end noprint">
+        <button class="btn btn-sm btn-primary" onClick={() => setEditingId("")}>
+          <span class="mdi mdi-plus-thick" aria-hidden="true" /> Create Secret
+        </button>
       </div>
     </>
   );

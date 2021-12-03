@@ -1,5 +1,7 @@
 import { FunctionComponent, h, Fragment, JSX } from "preact";
 import { useCallback, useEffect, useReducer } from "preact/hooks";
+import kebabcase from "lodash.kebabcase";
+
 import { SecretData, VaultClient } from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
 import { Modal } from "./modal";
@@ -29,9 +31,13 @@ const relevantFields: FieldName[] = ["label", "username"];
 
 const allFieldsValid = (
   formFields: Partial<Record<FieldName, string>>,
+  requireAll: boolean
 ): boolean => {
   for (const key of relevantFields) {
     if (!(key in formFields)) {
+      if (requireAll) {
+        return false;
+      }
       continue;
     }
     if (formFields[key] === "") {
@@ -65,7 +71,7 @@ const reducer = (state: State, action: Action): State => {
       };
       return {
         ...state,
-        valid: allFieldsValid(formFields),
+        valid: allFieldsValid(formFields, !state.secretInfo),
         formFields,
       };
     }
@@ -161,7 +167,7 @@ export const EditForm: FunctionComponent<{
   path: string;
   id: string;
   client: VaultClient;
-  handleClose: () => void;
+  handleClose: (id?: string) => void;
 }> = ({ path, id, client, handleClose }) => {
   const [{ error, secretInfo, valid, formFields, formerPassword }, dispatch] =
     useReducer(reducer, { formFields: {}, error: "" });
@@ -173,12 +179,15 @@ export const EditForm: FunctionComponent<{
 
   // Fetch metadata
   useEffect(() => {
-    client
-      .secretMetadata(`netbox/${path}/${id}`)
-      .then((meta) =>
-        dispatch({ type: "SET_INFO", info: infoFromMeta(id, meta) })
-      )
-      .catch(errorHandler);
+    // empty ID means new item
+    if (id) {
+      client
+        .secretMetadata(`netbox/${path}/${id}`)
+        .then((meta) =>
+          dispatch({ type: "SET_INFO", info: infoFromMeta(id, meta) })
+        )
+        .catch(errorHandler);
+    }
   }, [path, id, client]);
 
   const toggleReveal = useCallback(() => {
@@ -194,19 +203,24 @@ export const EditForm: FunctionComponent<{
 
   const save = useCallback(async () => {
     // validate
-    if (valid === false) {
+    if (valid === false || (id === "" && !allFieldsValid(formFields, true))) {
       dispatch({ type: "ERROR", message: "Fields cannot be empty" });
       return;
     }
 
+    let saveId = id;
+    if (id === "") {
+      saveId = kebabcase(formFields.label);
+    }
+
     try {
       // save metadata
-      if (anyFieldChanged(secretInfo, formFields)) {
+      if (id === "" || anyFieldChanged(secretInfo, formFields)) {
         const payload = {
           label: formFields.label || secretInfo?.label,
           username: formFields.username || secretInfo?.username,
         };
-        await client.secretMetadataUpdate(`netbox/${path}/${id}`, payload);
+        await client.secretMetadataUpdate(`netbox/${path}/${saveId}`, payload);
       }
 
       // save password
@@ -215,7 +229,7 @@ export const EditForm: FunctionComponent<{
           version,
           custom_metadata: { label, username },
         } = await client.secretDataUpdate(`netbox/${path}/${saveId}`, {
-            password: formFields.password,
+          password: formFields.password,
         });
         dispatch({
           type: "UPDATE",
@@ -234,7 +248,7 @@ export const EditForm: FunctionComponent<{
     }
 
     dispatch({ type: "ERROR", message: "" });
-    handleClose();
+    handleClose(saveId);
   }, [client, formFields, secretInfo, handleClose]);
 
   return (
@@ -245,18 +259,18 @@ export const EditForm: FunctionComponent<{
       handleConfirm={save}
       handleClose={handleClose}
     >
-      {secretInfo ? (
+      {secretInfo || id === "" ? (
         <>
           <FormField
             label="Label"
             name="label"
-            value={formFields?.label || secretInfo.label}
+            value={formFields?.label || secretInfo?.label}
             dispatch={dispatch}
           />
           <FormField
             label="Username"
             name="username"
-            value={formFields?.username || secretInfo.username}
+            value={formFields?.username || secretInfo?.username}
             dispatch={dispatch}
           />
           <FormField
