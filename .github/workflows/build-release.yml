@@ -22,3 +22,11 @@ jobs:
         run: npm run build
       - name: Build Plugin Artifact
         run: python setup.py sdist
+      - name: Determine file name
+        id: names
+        run: echo "::set-output name=artifact::$(python setup.py --fullname)"
+      - name: Save Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: plugin
+          path: ${steps.names.outputs.artifact}
