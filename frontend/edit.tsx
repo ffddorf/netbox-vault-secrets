@@ -182,7 +182,7 @@ export const EditForm: FunctionComponent<{
     // empty ID means new item
     if (id) {
       client
-        .secretMetadata(`netbox/${path}/${id}`)
+        .secretMetadata(`${path}/${id}`)
         .then((meta) =>
           dispatch({ type: "SET_INFO", info: infoFromMeta(id, meta) })
         )
@@ -193,7 +193,7 @@ export const EditForm: FunctionComponent<{
   const toggleReveal = useCallback(() => {
     if (!formerPassword) {
       client
-        .secretData(`netbox/${path}/${id}`)
+        .secretData(`${path}/${id}`)
         .then((data) => dispatch({ type: "PW_FETCH", data }))
         .catch(errorHandler);
     } else {
@@ -220,7 +220,7 @@ export const EditForm: FunctionComponent<{
           label: formFields.label || secretInfo?.label,
           username: formFields.username || secretInfo?.username,
         };
-        await client.secretMetadataUpdate(`netbox/${path}/${saveId}`, payload);
+        await client.secretMetadataUpdate(`${path}/${saveId}`, payload);
       }
 
       // save password
@@ -228,7 +228,7 @@ export const EditForm: FunctionComponent<{
         const {
           version,
           custom_metadata: { label, username },
-        } = await client.secretDataUpdate(`netbox/${path}/${saveId}`, {
+        } = await client.secretDataUpdate(`${path}/${saveId}`, {
           password: formFields.password,
         });
         dispatch({

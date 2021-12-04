@@ -17,12 +17,12 @@ const batch = (list: string[], batchSize: number): string[][] => {
 };
 
 const gatherSecrets = async (client: VaultClient, path: string) => {
-  const { keys } = await client.listSecrets(`netbox/${path}`);
+  const { keys } = await client.listSecrets(path);
   const results: SecretMetadata[] = [];
   // fetch batches of 5
   for (const set of batch(keys, 5)) {
     const items = await Promise.all(
-      set.map((key) => client.secretMetadata(`netbox/${path}/${key}`))
+      set.map((key) => client.secretMetadata(`${path}/${key}`))
     );
     results.push(...items);
   }
@@ -32,9 +32,13 @@ const gatherSecrets = async (client: VaultClient, path: string) => {
   return secretList;
 };
 
-const entityPath = "device/1";
+export interface InitData {
+  objectPath: string;
+}
 
-export const App: FunctionComponent<{}> = (props) => {
+export const App: FunctionComponent<{ initData: InitData }> = ({
+  initData,
+}) => {
   const [client, setClient] = useState<VaultClient | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingSecret, setDeletingSecret] = useState<SecretInfo | null>(null);
@@ -43,7 +47,7 @@ export const App: FunctionComponent<{}> = (props) => {
 
   useEffect(() => {
     if (client) {
-      gatherSecrets(client, entityPath)
+      gatherSecrets(client, initData.objectPath)
         .then((list) => {
           updateSecretList(list);
           setError(null);
@@ -57,7 +61,7 @@ export const App: FunctionComponent<{}> = (props) => {
 
   const reload = useCallback(
     async (id: string) => {
-      const meta = await client.secretMetadata(`netbox/${entityPath}/${id}`);
+      const meta = await client.secretMetadata(`${initData.objectPath}/${id}`);
       const info = infoFromMeta(id, meta);
       const index = secretList.findIndex((item) => item.id === id);
       if (index === -1) {
@@ -82,7 +86,7 @@ export const App: FunctionComponent<{}> = (props) => {
   );
 
   const deleteConfirm = useCallback(async () => {
-    await client.secretDelete(`netbox/${entityPath}/${deletingSecret.id}`);
+    await client.secretDelete(`${initData.objectPath}/${deletingSecret.id}`);
 
     // remove from list
     const index = secretList.findIndex((s) => s.id === deletingSecret.id);
@@ -129,14 +133,14 @@ export const App: FunctionComponent<{}> = (props) => {
             <List
               secretList={secretList}
               getSecret={(id) =>
-                client.secretData(`netbox/${entityPath}/${id}`)
+                client.secretData(`${initData.objectPath}/${id}`)
               }
               handleEdit={setEditingId}
               handleDelete={setDeletingSecret}
             />
             {editingId !== null && (
               <EditForm
-                path={entityPath}
+                path={initData.objectPath}
                 id={editingId}
                 client={client}
                 handleClose={editEnd}
