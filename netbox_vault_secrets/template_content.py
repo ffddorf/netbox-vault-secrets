@@ -16,4 +16,14 @@ class VaultDeviceSecrets(VaultSecretInserter):
     model = 'dcim.device'
 
 
-template_extensions = [VaultDeviceSecrets]
+class VaultServiceSecrets(VaultSecretInserter):
+    vault_path_slug = "service"
+    model = 'ipam.service'
+
+
+class VaultVMSecrets(VaultSecretInserter):
+    vault_path_slug = "vm"
+    model = 'virtualization.virtualmachine'
+
+
+template_extensions = [VaultDeviceSecrets, VaultServiceSecrets, VaultVMSecrets]
