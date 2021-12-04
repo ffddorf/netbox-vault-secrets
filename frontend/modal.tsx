@@ -42,7 +42,7 @@ export const Modal: FunctionComponent<{
               <button
                 type="button"
                 class="btn btn-secondary"
-                onClick={handleClose}
+                onClick={() => handleClose()}
               >
                 {closeText || "Close"}
               </button>
@@ -51,7 +51,7 @@ export const Modal: FunctionComponent<{
                 class={`btn btn-primary ${
                   confirmColor ? `btn-${confirmColor}` : ""
                 }`}
-                onClick={handleConfirm}
+                onClick={() => handleConfirm()}
               >
                 {confirmText}
               </button>
