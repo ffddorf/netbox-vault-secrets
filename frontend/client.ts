@@ -1,4 +1,4 @@
-export type HTTPMethod = "GET" | "POST";
+export type HTTPMethod = "GET" | "POST" | "DELETE";
 
 interface WrappedData<T> {
   data: T;
@@ -113,8 +113,8 @@ export class VaultClient {
     }
 
     if (resp.status === 200) {
-    return resp.json();
-  }
+      return resp.json();
+    }
   }
 
   async tokenLookup(): Promise<TokenLookupSelf> {
@@ -166,5 +166,10 @@ export class VaultClient {
       data,
     });
     return creation.data;
+  }
+
+  async secretDelete(path: string): Promise<void> {
+    const reqPath = `/v1/secret/metadata/${trimPath(path)}`;
+    await this.request(reqPath, "DELETE");
   }
 }

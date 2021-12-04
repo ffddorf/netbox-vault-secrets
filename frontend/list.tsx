@@ -14,7 +14,8 @@ const Secret: FunctionComponent<{
   meta: SecretInfo;
   getSecret: () => Promise<SecretData>;
   handleEdit: () => void;
-}> = ({ meta, getSecret, handleEdit }) => {
+  handleDelete: () => void;
+}> = ({ meta, getSecret, handleEdit, handleDelete }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [data, setData] = useState<{
     value: string;
@@ -50,7 +51,11 @@ const Secret: FunctionComponent<{
         >
           <i class="mdi mdi-pencil"></i>
         </a>{" "}
-        <a class={buttonClass("btn-danger")} title="Delete Secret">
+        <a
+          class={buttonClass("btn-danger")}
+          title="Delete Secret"
+          onClick={handleDelete}
+        >
           <i class="mdi mdi-trash-can-outline"></i>
         </a>
       </td>
@@ -62,7 +67,8 @@ export const List: FunctionComponent<{
   secretList: SecretInfo[];
   getSecret: (id: string) => Promise<SecretData>;
   handleEdit: (id: string) => void;
-}> = ({ secretList, getSecret, handleEdit }) => {
+  handleDelete: (secret: SecretInfo) => void;
+}> = ({ secretList, getSecret, handleEdit, handleDelete }) => {
   if (secretList.length === 0) {
     return <div class="text-muted">None</div>;
   }
@@ -76,6 +82,7 @@ export const List: FunctionComponent<{
             meta={secret}
             getSecret={() => getSecret(secret.id)}
             handleEdit={() => handleEdit(secret.id)}
+            handleDelete={() => handleDelete(secret)}
           />
         ))}
       </tbody>

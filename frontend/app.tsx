@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 
 import { SecretMetadata, VaultClient } from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
+import { ConfirmDelete } from "./dialogue";
 import { EditForm } from "./edit";
 import { List } from "./list";
 import { Login, logout } from "./login";
@@ -36,6 +37,7 @@ const entityPath = "device/1";
 const App: FunctionComponent<{}> = (props) => {
   const [client, setClient] = useState<VaultClient | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingSecret, setDeletingSecret] = useState<SecretInfo | null>(null);
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +81,21 @@ const App: FunctionComponent<{}> = (props) => {
     [editingId]
   );
 
+  const deleteConfirm = useCallback(async () => {
+    await client.secretDelete(`netbox/${entityPath}/${deletingSecret.id}`);
+
+    // remove from list
+    const index = secretList.findIndex((s) => s.id === deletingSecret.id);
+    if (index !== -1) {
+      updateSecretList([
+        ...secretList.slice(0, index),
+        ...secretList.slice(index + 1),
+      ]);
+    }
+
+    setDeletingSecret(null);
+  }, [client, deletingSecret]);
+
   if (error) {
     return (
       <div class="alert alert-danger" role="alert">
@@ -115,6 +132,7 @@ const App: FunctionComponent<{}> = (props) => {
                 client.secretData(`netbox/${entityPath}/${id}`)
               }
               handleEdit={setEditingId}
+              handleDelete={setDeletingSecret}
             />
             {editingId !== null && (
               <EditForm
@@ -122,6 +140,13 @@ const App: FunctionComponent<{}> = (props) => {
                 id={editingId}
                 client={client}
                 handleClose={editEnd}
+              />
+            )}
+            {deletingSecret && (
+              <ConfirmDelete
+                secretLabel={deletingSecret.label}
+                handleConfirm={deleteConfirm}
+                handleCancel={() => setDeletingSecret(null)}
               />
             )}
           </>

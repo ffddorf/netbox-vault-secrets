@@ -4,9 +4,20 @@ export const Modal: FunctionComponent<{
   title: string;
   id: string;
   confirmText: string;
+  confirmColor?: string;
+  closeText?: string;
   handleClose: () => void;
   handleConfirm: () => void;
-}> = ({ title, id, confirmText, handleClose, handleConfirm, children }) => {
+}> = ({
+  title,
+  id,
+  confirmText,
+  confirmColor,
+  closeText,
+  handleClose,
+  handleConfirm,
+  children,
+}) => {
   return (
     <>
       <div
@@ -33,11 +44,13 @@ export const Modal: FunctionComponent<{
                 class="btn btn-secondary"
                 onClick={handleClose}
               >
-                Close
+                {closeText || "Close"}
               </button>
               <button
                 type="button"
-                class="btn btn-primary"
+                class={`btn btn-primary ${
+                  confirmColor ? `btn-${confirmColor}` : ""
+                }`}
                 onClick={handleConfirm}
               >
                 {confirmText}
