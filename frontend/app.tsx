@@ -34,7 +34,7 @@ const gatherSecrets = async (client: VaultClient, path: string) => {
 
 const entityPath = "device/1";
 
-const App: FunctionComponent<{}> = (props) => {
+export const App: FunctionComponent<{}> = (props) => {
   const [client, setClient] = useState<VaultClient | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingSecret, setDeletingSecret] = useState<SecretInfo | null>(null);
@@ -160,27 +160,3 @@ const App: FunctionComponent<{}> = (props) => {
     </>
   );
 };
-
-// following is render boilerplate
-
-const container = document.getElementById("netbox-vault-app-container");
-container.innerHTML = "";
-
-let root;
-function init() {
-  root = render(<App />, container, root);
-}
-
-// @ts-ignore
-if (import.meta.webpackHot) {
-  console.log("found support for HMR");
-  // @ts-ignore
-  import.meta.webpackHot.accept("./app.tsx", () => {
-    console.log("reloading...");
-    requestAnimationFrame(init);
-  });
-  // @ts-ignore
-  import.meta.webpackHot.accept();
-}
-
-init();
