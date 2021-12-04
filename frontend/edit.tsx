@@ -2,7 +2,7 @@ import { FunctionComponent, h, Fragment, JSX } from "preact";
 import { useCallback, useEffect, useReducer } from "preact/hooks";
 import kebabcase from "lodash.kebabcase";
 
-import { SecretData, VaultClient } from "./client";
+import { NotFoundError, SecretData, VaultClient } from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
 import { Modal } from "./modal";
 
@@ -22,7 +22,7 @@ type FieldName = "label" | "username" | "password";
 type Action =
   | { type: "FORM_VALUE"; name: FieldName; value: string }
   | { type: "SET_INFO"; info: SecretInfo }
-  | { type: "PW_FETCH"; data: SecretData }
+  | { type: "PW_FETCH"; data?: SecretData }
   | { type: "PW_TOGGLE" }
   | { type: "UPDATE"; info: SecretInfo; value: string }
   | { type: "ERROR"; message: string };
@@ -77,11 +77,10 @@ const reducer = (state: State, action: Action): State => {
       };
     }
     case "PW_FETCH": {
-      const { data } = action.data;
       return {
         ...state,
         formerPassword: {
-          value: data?.password,
+          value: action.data?.data?.password ?? "",
           isRevealed: true,
         },
       };
@@ -190,7 +189,13 @@ export const EditForm: FunctionComponent<{
       client
         .secretData(`${path}/${id}`)
         .then((data) => dispatch({ type: "PW_FETCH", data }))
-        .catch(errorHandler);
+        .catch((e) => {
+          if (e instanceof NotFoundError) {
+            dispatch({ type: "PW_FETCH" });
+          } else {
+            errorHandler(e);
+          }
+        });
     } else {
       dispatch({ type: "PW_TOGGLE" });
     }
