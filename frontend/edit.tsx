@@ -27,18 +27,13 @@ type Action =
   | { type: "UPDATE"; info: SecretInfo; value: string }
   | { type: "ERROR"; message: string };
 
-const relevantFields: FieldName[] = ["label", "username"];
-
 const allFieldsValid = (
   formFields: Partial<Record<FieldName, string>>,
-  requireAll: boolean
+  relevantFields?: FieldName[]
 ): boolean => {
-  for (const key of relevantFields) {
+  for (const key of relevantFields ?? Object.keys(formFields)) {
     if (!(key in formFields)) {
-      if (requireAll) {
-        return false;
-      }
-      continue;
+      return false;
     }
     if (formFields[key] === "") {
       return false;
@@ -51,7 +46,7 @@ const anyFieldChanged = (
   secretInfo: SecretInfo,
   formFields: Partial<Record<FieldName, string>>
 ): boolean => {
-  for (const key of relevantFields) {
+  for (const key of ["label", "username"]) {
     if (!(key in formFields)) {
       continue;
     }
@@ -71,7 +66,7 @@ const reducer = (state: State, action: Action): State => {
       };
       return {
         ...state,
-        valid: allFieldsValid(formFields, !state.secretInfo),
+        valid: allFieldsValid(formFields),
         formFields,
       };
     }
@@ -203,7 +198,11 @@ export const EditForm: FunctionComponent<{
 
   const save = useCallback(async () => {
     // validate
-    if (valid === false || (id === "" && !allFieldsValid(formFields, true))) {
+    if (
+      valid === false ||
+      (id === "" &&
+        !allFieldsValid(formFields, ["label", "username", "password"]))
+    ) {
       dispatch({ type: "ERROR", message: "Fields cannot be empty" });
       return;
     }
