@@ -1,0 +1,2 @@
+recursive-include netbox_vault_secrets/templates *
+recursive-include netbox_vault_secrets/static *

@@ -1,11 +1,13 @@
 var path = require("path");
 
 module.exports = {
-  mode: process.env.NODE_ENV === "production" ? "production" : "development",
   devtool: "source-map",
   entry: "./index.ts",
   output: {
-    path: path.resolve(__dirname, "../dist"),
+    path: path.resolve(
+      __dirname,
+      "../netbox_vault_secrets/static/netbox_vault_secrets/"
+    ),
     filename: "index.js",
   },
   resolve: {

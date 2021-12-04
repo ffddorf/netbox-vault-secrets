@@ -23,6 +23,7 @@ services:
       - ./devel/plugins.py:/etc/netbox/config/plugins.py
       - ./devel/entrypoint.sh:/opt/netbox/plugin-entrypoint.sh
     environment:
+      NETBOX_VAULT_DEVELOP: "True"
       CORS_ORIGIN_ALLOW_ALL: "True"
       DB_HOST: postgres
       DB_NAME: netbox

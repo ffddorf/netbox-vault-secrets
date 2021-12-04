@@ -4,3 +4,5 @@ __pycache__/
 
 /dist/
 node_modules/
+
+/netbox_vault_secrets/static/
