@@ -1,7 +1,7 @@
 import { FunctionComponent, h, render, Fragment } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-import { SecretMetadata, VaultClient } from "./client";
+import { NotFoundError, SecretMetadata, VaultClient } from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
 import { ConfirmDelete } from "./dialogue";
 import { EditForm } from "./edit";
@@ -17,7 +17,17 @@ const batch = (list: string[], batchSize: number): string[][] => {
 };
 
 const gatherSecrets = async (client: VaultClient, path: string) => {
-  const { keys } = await client.listSecrets(path);
+  let keys = [];
+  try {
+    const meta = await client.listSecrets(path);
+    keys = meta.keys;
+  } catch (e) {
+    if (e instanceof NotFoundError) {
+      return [];
+    }
+    throw e;
+  }
+
   const results: SecretMetadata[] = [];
   // fetch batches of 5
   for (const set of batch(keys, 5)) {

@@ -80,6 +80,12 @@ export interface SecretCreationResponse {
   version: number;
 }
 
+export class NotFoundError extends Error {
+  constructor() {
+    super("Object not found in Vault");
+  }
+}
+
 // removes leading and trailing slashes
 const trimPath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
 
@@ -104,6 +110,10 @@ export class VaultClient {
 
     const resp = await fetch(url.toString(), init);
     if (!resp.ok) {
+      if (resp.status === 404) {
+        throw new NotFoundError();
+      }
+
       let errCause = "";
       try {
         const { errors }: { errors: string[] } = await resp.json();
