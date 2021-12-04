@@ -1,0 +1,32 @@
+name: Build & Release
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Typechecks
+        run: npm run typecheck
+      - name: Build Frontend Artifact
+        run: npm run build
+      - name: Build Plugin Artifact
+        run: python setup.py sdist
+      - name: Determine file name
+        id: names
+        run: echo "::set-output name=artifact::$(python setup.py --fullname)"
+      - name: Save Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: plugin
+          path: dist/${{ steps.names.outputs.artifact }}.tar.gz
