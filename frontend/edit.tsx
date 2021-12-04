@@ -199,7 +199,7 @@ export const EditForm: FunctionComponent<{
     } else {
       dispatch({ type: "PW_TOGGLE" });
     }
-  }, [client, path, id, secretInfo?.version]);
+  }, [client, path, id, formerPassword, secretInfo?.version]);
 
   const save = useCallback(async () => {
     // validate
