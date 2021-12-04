@@ -89,7 +89,10 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
 
   const editEnd = useCallback(
     async (id?: string) => {
-      await reload(id || editingId);
+      const reloadId = id ?? editingId;
+      if (reloadId) {
+        await reload(reloadId);
+      }
       setEditingId(null);
     },
     [editingId]
