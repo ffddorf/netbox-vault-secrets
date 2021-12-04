@@ -13,5 +13,6 @@ jobs:
         with:
           python-version: "3.9"
       - run: npm ci
+      - run: npm run typecheck
       - run: npm run build
       - run: python setup.py sdist

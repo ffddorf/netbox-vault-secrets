@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "typecheck": "cd frontend && tsc",
     "build": "cd frontend && webpack --mode=production",
     "serve": "cd frontend && webpack serve"
   },
