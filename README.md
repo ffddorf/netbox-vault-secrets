@@ -2,6 +2,10 @@
 
 Provides convenient access to secrets stored in [Hashicorp Vault](https://www.vaultproject.io/) via the Netbox UI. You can attach secrets on a _Device_, _Virtual Machine_ or _Service_. The plugin is intended to serve as a possible replacement for the secrets functionality present in Netbox pre 3.0. The Netbox maintainers recommend replacing it with Vault.
 
+It will add a card like this:
+
+<img width="405" alt="Screenshot 2021-12-05 at 22 38 29" src="https://user-images.githubusercontent.com/4941459/144764882-e735c08d-468a-40a3-822a-81e2b882ccba.png">
+
 The functionality is entirely client side. The plugin uses Javascript in the browser to access the Vault API directly. Your Netbox installation will never have access to the secrets or authentication credentials in Vault.
 
 Secrets are stored at paths per a simple convention:
