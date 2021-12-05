@@ -4,15 +4,15 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 import { VaultClient } from "./client";
 import { Modal } from "./modal";
 
-const VAULT_BASE_URL = "http://localhost:8082/";
-
 const LOCAL_STORAGE_KEY_TOKEN = "netbox-vault-token";
 
 export const logout = () => localStorage.removeItem(LOCAL_STORAGE_KEY_TOKEN);
 
 export const Login: FunctionComponent<{
   handleLogin: (client: VaultClient) => void;
-}> = ({ handleLogin }) => {
+  baseUrl: string;
+  kvMount: string;
+}> = ({ handleLogin, baseUrl, kvMount }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [tokenInput, setTokenInput] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export const Login: FunctionComponent<{
 
   useEffect(() => {
     const savedToken = localStorage.getItem(LOCAL_STORAGE_KEY_TOKEN);
-    const client = new VaultClient(VAULT_BASE_URL, savedToken);
+    const client = new VaultClient(baseUrl, kvMount, savedToken);
     client
       .tokenLookup()
       .then(() => {
@@ -28,10 +28,10 @@ export const Login: FunctionComponent<{
       })
       .catch(logout)
       .then(() => setIsLoading(false));
-  }, []);
+  }, [baseUrl, kvMount]);
 
   const handleTokenLogin = useCallback(() => {
-    const client = new VaultClient(VAULT_BASE_URL, tokenInput);
+    const client = new VaultClient(baseUrl, kvMount, tokenInput);
     client
       .tokenLookup()
       .then(() => {
@@ -40,7 +40,7 @@ export const Login: FunctionComponent<{
         setLoginError(null);
       })
       .catch((e) => setLoginError(e.message || e.toString()));
-  }, [tokenInput, handleLogin]);
+  }, [tokenInput, handleLogin, baseUrl, kvMount]);
 
   if (isLoading) {
     return <p>Loading...</p>;

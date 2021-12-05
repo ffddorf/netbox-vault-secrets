@@ -8,10 +8,10 @@ class VaultSecretsConfig(PluginConfig):
     version = '0.1'
     author = 'Marcus Weiner'
     author_email = 'mraerino@freifunk-duesseldorf.de'
-    base_url = 'vault-secrets'
-    required_settings = []
+    required_settings = ['api_url']
     default_settings = {
-
+        "kv_mount_path": "/v1/secret",
+        "secret_path_prefix": "/netbox",
     }
 
 
