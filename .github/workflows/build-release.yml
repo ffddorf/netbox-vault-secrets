@@ -30,3 +30,15 @@ jobs:
         with:
           name: plugin
           path: dist/${{ steps.names.outputs.artifact }}.tar.gz
+
+  release:
+    runs-on: ubuntu-20.04
+    if: "${{ github.ref_type == 'tag' }}"
+    steps:
+      - name: Fetch release artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: plugin
+          path: dist
+      - name: Create release
+        run: gh release create ${{ github.ref_name }} ./dist/*
