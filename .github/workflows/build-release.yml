@@ -33,6 +33,7 @@ jobs:
 
   release:
     runs-on: ubuntu-20.04
+    needs: build
     if: "${{ github.ref_type == 'tag' }}"
     steps:
       - name: Fetch release artifact
