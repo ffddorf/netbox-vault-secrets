@@ -8,6 +8,7 @@ class VaultSecretsConfig(PluginConfig):
     version = '0.1'
     author = 'Marcus Weiner'
     author_email = 'mraerino@freifunk-duesseldorf.de'
+    min_version = '3.0.0'
     required_settings = ['api_url']
     default_settings = {
         "kv_mount_path": "/v1/secret",

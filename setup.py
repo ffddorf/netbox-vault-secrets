@@ -6,6 +6,7 @@ setup(
     description='NetBox Plugin to manage vault secrets from Netbox',
     url='https://github.com/ffddorf/netbox-vault-secrets',
     author='Marcus Weiner',
+    author_email='mraerino@freifunk-duesseldorf.de',
     license='BSD 3-clause',
     install_requires=[],
     packages=find_packages(),
