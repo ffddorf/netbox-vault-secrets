@@ -1,7 +1,7 @@
 import { FunctionComponent, h, render, Fragment } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-import { NotFoundError, SecretMetadata, VaultClient } from "./client";
+import { NotFoundError, SecretMetadata, trimPath, VaultClient } from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
 import { ConfirmDelete } from "./dialogue";
 import { EditForm } from "./edit";
@@ -44,6 +44,11 @@ const gatherSecrets = async (client: VaultClient, path: string) => {
 
 export interface InitData {
   objectPath: string;
+  config: {
+    api_url: string;
+    kv_mount_path?: string;
+    secret_path_prefix?: string;
+  };
 }
 
 export const App: FunctionComponent<{ initData: InitData }> = ({
@@ -55,9 +60,13 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const secretsBasePath = `${trimPath(
+    initData.config.secret_path_prefix ?? "netbox"
+  )}/${initData.objectPath}`;
+
   useEffect(() => {
     if (client) {
-      gatherSecrets(client, initData.objectPath)
+      gatherSecrets(client, secretsBasePath)
         .then((list) => {
           updateSecretList(list);
           setError(null);
@@ -67,11 +76,11 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
           setError(e.message || e.toString());
         });
     }
-  }, [client]);
+  }, [client, secretsBasePath]);
 
   const reload = useCallback(
     async (id: string) => {
-      const meta = await client.secretMetadata(`${initData.objectPath}/${id}`);
+      const meta = await client.secretMetadata(`${secretsBasePath}/${id}`);
       const info = infoFromMeta(id, meta);
       const index = secretList.findIndex((item) => item.id === id);
       if (index === -1) {
@@ -84,7 +93,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
         ]);
       }
     },
-    [client, secretList]
+    [client, secretList, secretsBasePath]
   );
 
   const editEnd = useCallback(
@@ -99,7 +108,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
   );
 
   const deleteConfirm = useCallback(async () => {
-    await client.secretDelete(`${initData.objectPath}/${deletingSecret.id}`);
+    await client.secretDelete(`${secretsBasePath}/${deletingSecret.id}`);
 
     // remove from list
     const index = secretList.findIndex((s) => s.id === deletingSecret.id);
@@ -111,7 +120,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
     }
 
     setDeletingSecret(null);
-  }, [client, deletingSecret]);
+  }, [client, deletingSecret, secretsBasePath]);
 
   if (error) {
     return (
@@ -138,22 +147,26 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
           </a>
         )}
       </div>
-      <div class="card-body">
-        {client === null ? (
-          <Login handleLogin={setClient} />
-        ) : (
-          <>
+      {client === null ? (
+        <div class="card-body">
+          <Login
+            handleLogin={setClient}
+            baseUrl={initData.config.api_url}
+            kvMount={initData.config.kv_mount_path ?? "/v1/secret"}
+          />
+        </div>
+      ) : (
+        <>
+          <div class="card-body">
             <List
               secretList={secretList}
-              getSecret={(id) =>
-                client.secretData(`${initData.objectPath}/${id}`)
-              }
+              getSecret={(id) => client.secretData(`${secretsBasePath}/${id}`)}
               handleEdit={setEditingId}
               handleDelete={setDeletingSecret}
             />
             {editingId !== null && (
               <EditForm
-                path={initData.objectPath}
+                path={secretsBasePath}
                 id={editingId}
                 client={client}
                 handleClose={editEnd}
@@ -166,14 +179,18 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
                 handleCancel={() => setDeletingSecret(null)}
               />
             )}
-          </>
-        )}
-      </div>
-      <div class="card-footer text-end noprint">
-        <button class="btn btn-sm btn-primary" onClick={() => setEditingId("")}>
-          <span class="mdi mdi-plus-thick" aria-hidden="true" /> Create Secret
-        </button>
-      </div>
+          </div>
+          <div class="card-footer text-end noprint">
+            <button
+              class="btn btn-sm btn-primary"
+              onClick={() => setEditingId("")}
+            >
+              <span class="mdi mdi-plus-thick" aria-hidden="true" /> Create
+              Secret
+            </button>
+          </div>
+        </>
+      )}
     </>
   );
 };

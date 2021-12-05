@@ -87,17 +87,23 @@ export class NotFoundError extends Error {
 }
 
 // removes leading and trailing slashes
-const trimPath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
+export const trimPath = (path: string): string =>
+  path.replace(/^\/+|\/+$/g, "");
 
 export class VaultClient {
-  constructor(private base_url: string, private token: string) {}
+  private baseUrl: string;
+  private kvMount: string;
+
+  constructor(baseUrl: string, kvMount: string, private token: string) {
+    this.baseUrl = baseUrl.replace(/\/+$/, ""); // trim trailing slash
+    this.kvMount = trimPath(kvMount);
+  }
 
   private async request<R, B = null>(
     path: string,
     method?: HTTPMethod,
     body?: B
   ): Promise<R> {
-    const url = new URL(path, this.base_url);
     const init: RequestInit = {
       method: method || "GET",
       headers: {
@@ -108,7 +114,7 @@ export class VaultClient {
       init.body = JSON.stringify(body);
     }
 
-    const resp = await fetch(url.toString(), init);
+    const resp = await fetch(`${this.baseUrl}/${path}`, init);
     if (!resp.ok) {
       if (resp.status === 404) {
         throw new NotFoundError();
@@ -129,25 +135,25 @@ export class VaultClient {
 
   async tokenLookup(): Promise<TokenLookupSelf> {
     const info: WrappedData<TokenLookupSelf> = await this.request(
-      "/v1/auth/token/lookup-self"
+      "v1/auth/token/lookup-self"
     );
     return info.data;
   }
 
   async listSecrets(path: string): Promise<ListSecrets> {
-    const reqPath = `/v1/secret/metadata/${trimPath(path)}/?list=true`;
+    const reqPath = `${this.kvMount}/metadata/${trimPath(path)}/?list=true`;
     const secrets: WrappedData<ListSecrets> = await this.request(reqPath);
     return secrets.data;
   }
 
   async secretMetadata(path: string): Promise<SecretMetadata> {
-    const reqPath = `/v1/secret/metadata/${trimPath(path)}`;
+    const reqPath = `${this.kvMount}/metadata/${trimPath(path)}`;
     const meta: WrappedData<SecretMetadata> = await this.request(reqPath);
     return meta.data;
   }
 
   async secretData(path: string): Promise<SecretData> {
-    const reqPath = `/v1/secret/data/${trimPath(path)}`;
+    const reqPath = `${this.kvMount}/data/${trimPath(path)}`;
     const data: WrappedData<SecretData> = await this.request(reqPath);
     return data.data;
   }
@@ -156,7 +162,7 @@ export class VaultClient {
     path: string,
     meta: Record<string, string>
   ): Promise<void> {
-    const metaReqPath = `/v1/secret/metadata/${trimPath(path)}`;
+    const metaReqPath = `${this.kvMount}/metadata/${trimPath(path)}`;
     await this.request<{}, SecretMetadataCreation>(metaReqPath, "POST", {
       custom_metadata: meta,
     });
@@ -167,7 +173,7 @@ export class VaultClient {
     data: Record<string, string>,
     version?: number
   ): Promise<SecretCreationResponse> {
-    const dataReqPath = `/v1/secret/data/${trimPath(path)}`;
+    const dataReqPath = `${this.kvMount}/data/${trimPath(path)}`;
     const creation = await this.request<
       WrappedData<SecretCreationResponse>,
       SecretDataCreation
@@ -179,7 +185,7 @@ export class VaultClient {
   }
 
   async secretDelete(path: string): Promise<void> {
-    const reqPath = `/v1/secret/metadata/${trimPath(path)}`;
+    const reqPath = `${this.kvMount}/metadata/${trimPath(path)}`;
     await this.request(reqPath, "DELETE");
   }
 }
