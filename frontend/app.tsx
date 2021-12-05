@@ -147,15 +147,17 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
           </a>
         )}
       </div>
-      <div class="card-body">
-        {client === null ? (
+      {client === null ? (
+        <div class="card-body">
           <Login
             handleLogin={setClient}
             baseUrl={initData.config.api_url}
             kvMount={initData.config.kv_mount_path ?? "/v1/secret"}
           />
-        ) : (
-          <>
+        </div>
+      ) : (
+        <>
+          <div class="card-body">
             <List
               secretList={secretList}
               getSecret={(id) => client.secretData(`${secretsBasePath}/${id}`)}
@@ -177,14 +179,18 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
                 handleCancel={() => setDeletingSecret(null)}
               />
             )}
-          </>
-        )}
-      </div>
-      <div class="card-footer text-end noprint">
-        <button class="btn btn-sm btn-primary" onClick={() => setEditingId("")}>
-          <span class="mdi mdi-plus-thick" aria-hidden="true" /> Create Secret
-        </button>
-      </div>
+          </div>
+          <div class="card-footer text-end noprint">
+            <button
+              class="btn btn-sm btn-primary"
+              onClick={() => setEditingId("")}
+            >
+              <span class="mdi mdi-plus-thick" aria-hidden="true" /> Create
+              Secret
+            </button>
+          </div>
+        </>
+      )}
     </>
   );
 };
