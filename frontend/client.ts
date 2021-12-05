@@ -90,14 +90,17 @@ export class NotFoundError extends Error {
 const trimPath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
 
 export class VaultClient {
-  constructor(private base_url: string, private token: string) {}
+  private baseUrl: string;
+
+  constructor(baseUrl: string, private token: string) {
+    this.baseUrl = baseUrl.replace(/\/+$/, ""); // trim trailing slash
+  }
 
   private async request<R, B = null>(
     path: string,
     method?: HTTPMethod,
     body?: B
   ): Promise<R> {
-    const url = new URL(path, this.base_url);
     const init: RequestInit = {
       method: method || "GET",
       headers: {
@@ -108,7 +111,8 @@ export class VaultClient {
       init.body = JSON.stringify(body);
     }
 
-    const resp = await fetch(url.toString(), init);
+    const trimmedPath = path.replace(/^\/+/, "");
+    const resp = await fetch(`${this.baseUrl}/${trimmedPath}`, init);
     if (!resp.ok) {
       if (resp.status === 404) {
         throw new NotFoundError();
