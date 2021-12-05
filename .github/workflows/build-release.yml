@@ -43,3 +43,5 @@ jobs:
           path: dist
       - name: Create release
         run: gh release create ${{ github.ref_name }} ./dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
