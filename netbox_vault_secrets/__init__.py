@@ -1,16 +1,16 @@
-import pkg_resources
+from importlib.metadata import metadata
 from extras.plugins import PluginConfig
 
-pkg_info = pkg_resources.require("netbox_vault_secrets")[0]
+meta = metadata('netbox_vault_secrets')
 
 
 class VaultSecretsConfig(PluginConfig):
-    name = pkg_info.name
+    name = 'netbox_vault_secrets'
     verbose_name = 'Vault Secrets'
-    description = pkg_info.description
-    version = pkg_info.version
-    author = pkg_info.author
-    author_email = pkg_info.author_email
+    description = meta['description']
+    version = meta['version']
+    author = meta['author']
+    author_email = meta['author-email']
 
     min_version = '3.0.0'
     required_settings = ['api_url']

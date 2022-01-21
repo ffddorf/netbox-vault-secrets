@@ -9,6 +9,7 @@ setup(
     author_email='mraerino@freifunk-duesseldorf.de',
     license='BSD 2-clause',
     license_files=('LICENSE.md',),
+    python_requires='>=3.8',
     install_requires=[],
     packages=find_packages(),
     include_package_data=True,
