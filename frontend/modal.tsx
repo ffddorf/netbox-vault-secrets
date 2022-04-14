@@ -3,11 +3,11 @@ import { FunctionComponent, h, Fragment } from "preact";
 export const Modal: FunctionComponent<{
   title: string;
   id: string;
-  confirmText: string;
+  confirmText?: string;
   confirmColor?: string;
   closeText?: string;
   handleClose: () => void;
-  handleConfirm: () => void;
+  handleConfirm?: () => void;
 }> = ({
   title,
   id,
@@ -46,15 +46,17 @@ export const Modal: FunctionComponent<{
               >
                 {closeText || "Close"}
               </button>
-              <button
-                type="button"
-                class={`btn btn-primary ${
-                  confirmColor ? `btn-${confirmColor}` : ""
-                }`}
-                onClick={() => handleConfirm()}
-              >
-                {confirmText}
-              </button>
+              {confirmText && (
+                <button
+                  type="button"
+                  class={`btn btn-primary ${
+                    confirmColor ? `btn-${confirmColor}` : ""
+                  }`}
+                  onClick={() => handleConfirm()}
+                >
+                  {confirmText}
+                </button>
+              )}
             </div>
           </div>
         </div>
