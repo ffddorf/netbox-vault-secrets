@@ -19,7 +19,7 @@ import { infoFromMeta, SecretInfo } from "./common";
 import { ConfirmDelete } from "./dialogue";
 import { EditForm } from "./edit";
 import { List } from "./list";
-import { Login, logout } from "./login";
+import { Login, logout, OidcConfig } from "./login";
 
 const batch = (list: string[], batchSize: number): string[][] => {
   const result = [];
@@ -61,6 +61,8 @@ export interface InitData {
     api_url: string;
     kv_mount_path?: string;
     secret_path_prefix?: string;
+    login_methods?: string[];
+    oidc?: OidcConfig;
   };
 }
 
@@ -185,6 +187,8 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
           handleLogin={setClient}
           baseUrl={config.api_url}
           kvMount={config.kv_mount_path ?? "/secret"}
+          loginMethods={config.login_methods ?? ["token"]}
+          oidc={config.oidc}
         />
       </Card>
     );

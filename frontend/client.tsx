@@ -26,6 +26,18 @@ export interface TokenLookupSelf {
   ttl: number;
 }
 
+export interface AuthUrl {
+  auth_url: string;
+}
+
+export interface AuthData {
+  client_token: string;
+  accessor: string;
+  policies: string[];
+  lease_duration: number;
+  renewable: boolean;
+}
+
 export interface ListSecrets {
   keys: string[];
 }
@@ -121,6 +133,7 @@ export const trimPath = (path: string): string =>
 
 export interface Mounts {
   kv: string;
+  oidc: string;
 }
 
 export class VaultClient {
@@ -177,6 +190,30 @@ export class VaultClient {
       "v1/auth/token/lookup-self"
     );
     return info.data;
+  }
+
+  async oidcAuthURL(redirect_uri: string, role?: string): Promise<AuthUrl> {
+    const info: WrappedData<AuthUrl> = await this.request(
+      `v1/${this.mounts.oidc}/oidc/auth_url`,
+      "POST",
+      {
+        role,
+        redirect_uri,
+      }
+    );
+    return info.data;
+  }
+
+  async oidcCallback(params: {
+    state: string;
+    code: string;
+  }): Promise<AuthData> {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => qs.set(k, v));
+    const info: { auth: AuthData } = await this.request(
+      `v1/${this.mounts.oidc}/oidc/callback?${qs.toString()}`
+    );
+    return info.auth;
   }
 
   async listSecrets(path: string): Promise<ListSecrets> {
