@@ -82,9 +82,14 @@ export const Login: FunctionComponent<{
 
   useEffect(() => {
     const savedToken = localStorage.getItem(LOCAL_STORAGE_KEY_TOKEN);
+    if (!savedToken) {
+      setIsLoading(false);
+      return;
+    }
+
     const client = new VaultClient(baseUrl, mounts, savedToken);
     client
-      .tokenLookup()
+      .tokenLookupSelf()
       .then(() => {
         handleLogin(client);
       })
@@ -97,7 +102,7 @@ export const Login: FunctionComponent<{
       setLoginError(null);
       const client = new VaultClient(baseUrl, mounts, token);
       client
-        .tokenLookup()
+        .tokenLookupSelf()
         .then(() => {
           localStorage.setItem(LOCAL_STORAGE_KEY_TOKEN, token);
           handleLogin(client);
@@ -118,20 +123,11 @@ export const Login: FunctionComponent<{
             state: string;
             code: string;
           }>();
-
           const popup = window.open(auth_url, "vaultOIDCWindow");
-
-          const params = await resp;
+          const params = await resp; // wait for popup to finish
           popup.close();
-          const auth = await client.oidcCallback(params);
 
-          // todo: allow renewing the token
-          // todo: store token in localstorage
-          const authedClient = new VaultClient(
-            baseUrl,
-            mounts,
-            auth.client_token
-          );
+          const authedClient = await client.oidcCompleteFlow(params);
           handleLogin(authedClient);
         })
         .catch((e) => setLoginError(e.message || e.toString()));
