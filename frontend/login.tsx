@@ -90,10 +90,11 @@ export const Login: FunctionComponent<{
           id="vaultLogin"
           title="Login to Vault"
           handleClose={() => setModalOpen(false)}
+          class="d-flex flex-column gap-4"
         >
           <TokenLogin handleLogin={handleTokenLogin} />
           {loginError && (
-            <pre class="mt-3 alert alert-danger" role="alert">
+            <pre class="alert alert-danger" role="alert">
               {loginError}
             </pre>
           )}

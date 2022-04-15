@@ -8,6 +8,7 @@ export const Modal: FunctionComponent<{
   closeText?: string;
   handleClose: () => void;
   handleConfirm?: () => void;
+  class?: string;
 }> = ({
   title,
   id,
@@ -17,6 +18,7 @@ export const Modal: FunctionComponent<{
   handleClose,
   handleConfirm,
   children,
+  class: className,
 }) => {
   return (
     <>
@@ -37,7 +39,7 @@ export const Modal: FunctionComponent<{
             <div class="modal-header">
               <h5 class="modal-title">{title}</h5>
             </div>
-            <div class="modal-body">{children}</div>
+            <div class={`modal-body ${className}`}>{children}</div>
             <div class="modal-footer">
               <button
                 type="button"
