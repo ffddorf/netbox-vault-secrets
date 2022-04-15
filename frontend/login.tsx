@@ -32,7 +32,7 @@ export const Login: FunctionComponent<{
       })
       .catch(logout)
       .then(() => setIsLoading(false));
-  }, [baseUrl, kvMount]);
+  }, [baseUrl, mounts]);
 
   const handleTokenLogin = useCallback(() => {
     setLoginError(null);

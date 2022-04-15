@@ -152,7 +152,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
           <Login
             handleLogin={setClient}
             baseUrl={config.api_url}
-            kvMount={config.kv_mount_path ?? "/v1/secret"}
+            kvMount={config.kv_mount_path ?? "/secret"}
           />
         </div>
       ) : (

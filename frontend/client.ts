@@ -96,18 +96,14 @@ export interface Mounts {
 
 export class VaultClient {
   private baseUrl: string;
-  private mounts: Partial<Mounts>;
+  private mounts: Mounts;
 
-  constructor(
-    baseUrl: string,
-    mounts?: Partial<Mounts>,
-    private token?: string
-  ) {
+  constructor(baseUrl: string, mounts: Mounts, private token?: string) {
     this.baseUrl = baseUrl.replace(/\/+$/, ""); // trim trailing slash
     this.mounts = Object.entries(mounts).reduce((acc, [k, v]) => {
       acc[k] = trimPath(v);
       return acc;
-    }, {});
+    }, {} as Mounts);
   }
 
   private async request<R, B = null>(
@@ -155,19 +151,20 @@ export class VaultClient {
   }
 
   async listSecrets(path: string): Promise<ListSecrets> {
-    const reqPath = `${this.mounts.kv}/metadata/${trimPath(path)}/?list=true`;
+    path = trimPath(path);
+    const reqPath = `v1/${this.mounts.kv}/metadata/${path}/?list=true`;
     const secrets: WrappedData<ListSecrets> = await this.request(reqPath);
     return secrets.data;
   }
 
   async secretMetadata(path: string): Promise<SecretMetadata> {
-    const reqPath = `${this.mounts.kv}/metadata/${trimPath(path)}`;
+    const reqPath = `v1/${this.mounts.kv}/metadata/${trimPath(path)}`;
     const meta: WrappedData<SecretMetadata> = await this.request(reqPath);
     return meta.data;
   }
 
   async secretData(path: string): Promise<SecretData> {
-    const reqPath = `${this.mounts.kv}/data/${trimPath(path)}`;
+    const reqPath = `v1/${this.mounts.kv}/data/${trimPath(path)}`;
     const data: WrappedData<SecretData> = await this.request(reqPath);
     return data.data;
   }
@@ -176,7 +173,7 @@ export class VaultClient {
     path: string,
     meta: Record<string, string>
   ): Promise<void> {
-    const metaReqPath = `${this.mounts.kv}/metadata/${trimPath(path)}`;
+    const metaReqPath = `v1/${this.mounts.kv}/metadata/${trimPath(path)}`;
     await this.request<{}, SecretMetadataCreation>(metaReqPath, "POST", {
       custom_metadata: meta,
     });
@@ -187,7 +184,7 @@ export class VaultClient {
     data: Record<string, string>,
     version?: number
   ): Promise<SecretCreationResponse> {
-    const dataReqPath = `${this.mounts.kv}/data/${trimPath(path)}`;
+    const dataReqPath = `v1/${this.mounts.kv}/data/${trimPath(path)}`;
     const creation = await this.request<
       WrappedData<SecretCreationResponse>,
       SecretDataCreation
@@ -199,7 +196,7 @@ export class VaultClient {
   }
 
   async secretDelete(path: string): Promise<void> {
-    const reqPath = `${this.mounts.kv}/metadata/${trimPath(path)}`;
+    const reqPath = `v1/${this.mounts.kv}/metadata/${trimPath(path)}`;
     await this.request(reqPath, "DELETE");
   }
 }
