@@ -1,4 +1,11 @@
-import { FunctionComponent, h, render, Fragment, JSX } from "preact";
+import {
+  FunctionComponent,
+  h,
+  render,
+  Fragment,
+  JSX,
+  ComponentChildren,
+} from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
 import {
@@ -63,6 +70,30 @@ const displayError = (e: Error): JSX.Element => {
   }
 
   return <>{e.message || e.toString()}</>;
+};
+
+const Card: FunctionComponent<{
+  footer?: ComponentChildren;
+  onLogout?: () => void;
+}> = ({ children, onLogout, footer }) => {
+  return (
+    <>
+      <div class="card-header d-flex">
+        <h5>Secrets</h5>
+        {onLogout && (
+          <a
+            class="btn btn-outline-secondary btn-sm"
+            style={{ marginLeft: "auto" }}
+            onClick={onLogout}
+          >
+            Logout
+          </a>
+        )}
+      </div>
+      <div class="card-body">{children}</div>
+      {footer && <div class="card-footer text-end noprint">{footer}</div>}
+    </>
+  );
 };
 
 export const App: FunctionComponent<{ initData: InitData }> = ({
@@ -138,73 +169,64 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
 
   if (error) {
     return (
-      <div class="alert alert-danger" role="alert">
-        Unable to load secrets:
-        {displayError(error)}
-      </div>
+      <Card>
+        <div class="alert alert-danger" role="alert">
+          Unable to load secrets:
+          {displayError(error)}
+        </div>
+      </Card>
+    );
+  }
+
+  if (client === null) {
+    return (
+      <Card>
+        <Login
+          handleLogin={setClient}
+          baseUrl={config.api_url}
+          kvMount={config.kv_mount_path ?? "/secret"}
+        />
+      </Card>
     );
   }
 
   return (
     <>
-      <div class="card-header d-flex">
-        <h5>Secrets</h5>
-        {client !== null && (
-          <a
-            class="btn btn-outline-secondary btn-sm"
-            style={{ marginLeft: "auto" }}
-            onClick={() => {
-              logout();
-              setClient(null);
-            }}
+      <Card
+        onLogout={() => {
+          logout();
+          setClient(null);
+        }}
+        footer={
+          <button
+            class="btn btn-sm btn-primary"
+            onClick={() => setEditingId("")}
           >
-            Logout
-          </a>
-        )}
-      </div>
-      {client === null ? (
-        <div class="card-body">
-          <Login
-            handleLogin={setClient}
-            baseUrl={config.api_url}
-            kvMount={config.kv_mount_path ?? "/secret"}
-          />
-        </div>
-      ) : (
-        <>
-          <div class="card-body">
-            <List
-              secretList={secretList}
-              getSecret={(id) => client.secretData(`${secretsBasePath}/${id}`)}
-              handleEdit={setEditingId}
-              handleDelete={setDeletingSecret}
-            />
-            {editingId !== null && (
-              <EditForm
-                path={secretsBasePath}
-                id={editingId}
-                client={client}
-                handleClose={editEnd}
-              />
-            )}
-            {deletingSecret && (
-              <ConfirmDelete
-                secretLabel={deletingSecret.label}
-                handleConfirm={deleteConfirm}
-                handleCancel={() => setDeletingSecret(null)}
-              />
-            )}
-          </div>
-          <div class="card-footer text-end noprint">
-            <button
-              class="btn btn-sm btn-primary"
-              onClick={() => setEditingId("")}
-            >
-              <span class="mdi mdi-plus-thick" aria-hidden="true" /> Create
-              Secret
-            </button>
-          </div>
-        </>
+            <span class="mdi mdi-plus-thick" aria-hidden="true" /> Create Secret
+          </button>
+        }
+      >
+        <List
+          secretList={secretList}
+          getSecret={(id) => client.secretData(`${secretsBasePath}/${id}`)}
+          handleEdit={setEditingId}
+          handleDelete={setDeletingSecret}
+        />
+      </Card>
+      {editingId !== null && (
+        <EditForm
+          path={secretsBasePath}
+          id={editingId}
+          client={client}
+          handleClose={editEnd}
+        />
+      )}
+      {deletingSecret && (
+        <ConfirmDelete
+          secretLabel={deletingSecret.label}
+          handleConfirm={deleteConfirm}
+          handleCancel={() => setDeletingSecret(null)}
+        />
       )}
     </>
   );
