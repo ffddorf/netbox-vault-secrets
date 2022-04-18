@@ -1,0 +1,8 @@
+<script>
+  const params = new URLSearchParams(location.search);
+  const state = params.get("state");
+  const code = params.get("code");
+
+  const targetWindow = window.opener;
+  targetWindow.postMessage({ state, code }, location.origin);
+</script>

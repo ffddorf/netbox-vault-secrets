@@ -2,7 +2,7 @@
 
 source /opt/netbox/venv/bin/activate
 
-bash -c "cd /src && python setup.py develop --user"
+pip install -e /src
 
 SECRET_KEY="dummy" python /opt/netbox/netbox/manage.py collectstatic --no-input
 
