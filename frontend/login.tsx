@@ -18,9 +18,13 @@ export const Login: FunctionComponent<{
   const [tokenInput, setTokenInput] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
 
+  const mounts = {
+    kv: kvMount,
+  };
+
   useEffect(() => {
     const savedToken = localStorage.getItem(LOCAL_STORAGE_KEY_TOKEN);
-    const client = new VaultClient(baseUrl, kvMount, savedToken);
+    const client = new VaultClient(baseUrl, mounts, savedToken);
     client
       .tokenLookup()
       .then(() => {
@@ -28,19 +32,19 @@ export const Login: FunctionComponent<{
       })
       .catch(logout)
       .then(() => setIsLoading(false));
-  }, [baseUrl, kvMount]);
+  }, [baseUrl, mounts]);
 
   const handleTokenLogin = useCallback(() => {
-    const client = new VaultClient(baseUrl, kvMount, tokenInput);
+    setLoginError(null);
+    const client = new VaultClient(baseUrl, mounts, tokenInput);
     client
       .tokenLookup()
       .then(() => {
         localStorage.setItem(LOCAL_STORAGE_KEY_TOKEN, tokenInput);
         handleLogin(client);
-        setLoginError(null);
       })
       .catch((e) => setLoginError(e.message || e.toString()));
-  }, [tokenInput, handleLogin, baseUrl, kvMount]);
+  }, [tokenInput, handleLogin, baseUrl, mounts]);
 
   if (isLoading) {
     return <p>Loading...</p>;

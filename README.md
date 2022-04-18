@@ -29,7 +29,7 @@ PLUGINS = ["netbox_vault_secrets"]
 PLUGINS_CONFIG = {
     "netbox_vault_secrets": {
         "api_url": "https://your-vault-deployment/", # can be relative
-        "kv_mount_path": "/v1/secret",  # optional
+        "kv_mount_path": "/secret",  # optional
         "secret_path_prefix": "/netbox",  # optional
     }
 }

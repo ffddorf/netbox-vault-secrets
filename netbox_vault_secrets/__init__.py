@@ -15,7 +15,7 @@ class VaultSecretsConfig(PluginConfig):
     min_version = '3.0.0'
     required_settings = ['api_url']
     default_settings = {
-        "kv_mount_path": "/v1/secret",
+        "kv_mount_path": "/secret",
         "secret_path_prefix": "/netbox",
     }
 

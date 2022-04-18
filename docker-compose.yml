@@ -9,7 +9,7 @@ services:
       - 8082:8200
 
   netbox:
-    image: netboxcommunity/netbox:v3.0.10
+    image: netboxcommunity/netbox:v3.2.0
     ports:
       - 8081:8080
     depends_on:
@@ -55,7 +55,8 @@ services:
       POSTGRES_USER: netbox
     healthcheck:
       test: pg_isready
-  redis: &redis
+  redis:
+    &redis
     image: redis:6-alpine
     command:
       - sh
@@ -66,7 +67,7 @@ services:
     environment:
       REDIS_PASSWORD: H733Kdjndks81
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
   redis-cache:
     <<: *redis
     environment:
