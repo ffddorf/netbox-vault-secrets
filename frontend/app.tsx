@@ -1,15 +1,8 @@
-import {
-  FunctionComponent,
-  h,
-  render,
-  Fragment,
-  JSX,
-  ComponentChildren,
-} from "preact";
+import { FunctionComponent, h, Fragment, ComponentChildren } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
 import {
-  HTMLError,
+  displayError,
   NotFoundError,
   SecretMetadata,
   trimPath,
@@ -65,14 +58,6 @@ export interface InitData {
     oidc?: OidcConfig;
   };
 }
-
-const displayError = (e: Error): JSX.Element => {
-  if (typeof (e as HTMLError).html === "function") {
-    return (e as HTMLError).html();
-  }
-
-  return <>{e.message || e.toString()}</>;
-};
 
 const Card: FunctionComponent<{
   footer?: ComponentChildren;

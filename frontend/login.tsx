@@ -1,7 +1,7 @@
 import { FunctionComponent, h, Fragment } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-import { VaultClient } from "./client";
+import { displayError, VaultClient } from "./client";
 import { Modal } from "./modal";
 
 const LOCAL_STORAGE_KEY_TOKEN = "netbox-vault-token";
@@ -16,31 +16,40 @@ export interface OidcConfig {
 const TokenLogin: FunctionComponent<{
   handleLogin: (token: string) => void;
 }> = ({ handleLogin }) => {
+  const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [tokenInput, setTokenInput] = useState<string | null>(null);
   return (
-    <div class="form-group">
-      <label for="vaultTokenInput">Vault Token</label>
-      <div class="input-group">
-        <input
-          class="form-control"
-          type="password"
-          id="vaultTokenInput"
-          onChange={(ev) => setTokenInput(ev.currentTarget.value)}
-        />
-        <div class="input-group-append">
-          <button
-            type="button"
-            class={`btn btn-primary`}
-            onClick={() => handleLogin(tokenInput)}
-          >
-            Login
-          </button>
-        </div>
-      </div>
-      <small id="vaultTokenInputHelp" class="form-text text-muted">
-        Please provide a valid Vault token.
-      </small>
-    </div>
+    <>
+      {isModalOpen && (
+        <Modal
+          id="vaultLogin"
+          title="Login to Vault"
+          handleClose={() => setModalOpen(false)}
+          confirmText="Login"
+          handleConfirm={() => {
+            setModalOpen(false);
+            handleLogin(tokenInput);
+          }}
+          class="d-flex flex-column gap-4"
+        >
+          <div class="form-group">
+            <label for="vaultTokenInput">Vault Token</label>
+            <input
+              class="form-control"
+              type="password"
+              id="vaultTokenInput"
+              onChange={(ev) => setTokenInput(ev.currentTarget.value)}
+            />
+            <small id="vaultTokenInputHelp" class="form-text text-muted">
+              Please provide a valid Vault token.
+            </small>
+          </div>
+        </Modal>
+      )}
+      <a class="btn btn-primary" onClick={() => setModalOpen(true)}>
+        Login using Token
+      </a>
+    </>
   );
 };
 
@@ -72,8 +81,7 @@ export const Login: FunctionComponent<{
   oidc?: OidcConfig;
 }> = ({ handleLogin, baseUrl, kvMount, loginMethods, oidc }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isModalOpen, setModalOpen] = useState<boolean>(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<Error | null>(null);
 
   const mounts = {
     kv: kvMount,
@@ -107,7 +115,7 @@ export const Login: FunctionComponent<{
           localStorage.setItem(LOCAL_STORAGE_KEY_TOKEN, token);
           handleLogin(client);
         })
-        .catch((e) => setLoginError(e.message || e.toString()));
+        .catch((e) => setLoginError(e));
     },
     [handleLogin, baseUrl, mounts]
   );
@@ -141,45 +149,31 @@ export const Login: FunctionComponent<{
 
   return (
     <>
-      {isModalOpen && (
-        <Modal
-          id="vaultLogin"
-          title="Login to Vault"
-          handleClose={() => setModalOpen(false)}
-          class="d-flex flex-column gap-4"
+      {(loginMethods.includes("oidc") &&
+        oidc?.roles &&
+        Object.entries(oidc?.roles).map(([role, label]: [string, string]) => (
+          <button
+            class="btn btn-primary align-self-center"
+            onClick={handleOidcLogin(role)}
+          >
+            Login using {label}
+          </button>
+        ))) ?? (
+        <button
+          class="btn btn-primary align-self-center"
+          onClick={handleOidcLogin()}
         >
-          {(loginMethods.includes("oidc") &&
-            oidc?.roles &&
-            Object.entries(oidc?.roles).map(
-              ([role, label]: [string, string]) => (
-                <button
-                  class="btn btn-primary align-self-center"
-                  onClick={handleOidcLogin(role)}
-                >
-                  Login using {label}
-                </button>
-              )
-            )) ?? (
-            <button
-              class="btn btn-primary align-self-center"
-              onClick={handleOidcLogin()}
-            >
-              Login using OIDC
-            </button>
-          )}
-          {loginMethods.includes("token") && (
-            <TokenLogin handleLogin={handleTokenLogin} />
-          )}
-          {loginError && (
-            <pre class="alert alert-danger" role="alert">
-              {loginError}
-            </pre>
-          )}
-        </Modal>
+          Login using OIDC
+        </button>
+      )}{" "}
+      {loginMethods.includes("token") && (
+        <TokenLogin handleLogin={handleTokenLogin} />
       )}
-      <a class="btn btn-primary" onClick={() => setModalOpen(true)}>
-        Login to Vault
-      </a>
+      {loginError && (
+        <pre class="alert alert-danger mt-3" role="alert">
+          {displayError(loginError)}
+        </pre>
+      )}
     </>
   );
 };

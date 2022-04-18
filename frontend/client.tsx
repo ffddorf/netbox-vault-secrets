@@ -1,4 +1,4 @@
-import { JSX, h } from "preact";
+import { JSX, h, Fragment } from "preact";
 
 export type HTTPMethod = "GET" | "POST" | "DELETE";
 
@@ -373,3 +373,11 @@ export class VaultClient {
     await this.requestWithRenew(reqPath, "DELETE");
   }
 }
+
+export const displayError = (e: Error): JSX.Element => {
+  if (typeof (e as HTMLError).html === "function") {
+    return (e as HTMLError).html();
+  }
+
+  return <>{e.message || e.toString()}</>;
+};
