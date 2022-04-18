@@ -52,7 +52,7 @@ export interface InitData {
 }
 
 export const App: FunctionComponent<{ initData: InitData }> = ({
-  initData,
+  initData: { config, objectPath },
 }) => {
   const [client, setClient] = useState<VaultClient | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,8 +61,8 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
   const [error, setError] = useState<string | null>(null);
 
   const secretsBasePath = `${trimPath(
-    initData.config.secret_path_prefix ?? "netbox"
-  )}/${initData.objectPath}`;
+    config.secret_path_prefix ?? "netbox"
+  )}/${objectPath}`;
 
   useEffect(() => {
     if (client) {
@@ -151,8 +151,8 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
         <div class="card-body">
           <Login
             handleLogin={setClient}
-            baseUrl={initData.config.api_url}
-            kvMount={initData.config.kv_mount_path ?? "/v1/secret"}
+            baseUrl={config.api_url}
+            kvMount={config.kv_mount_path ?? "/v1/secret"}
           />
         </div>
       ) : (
