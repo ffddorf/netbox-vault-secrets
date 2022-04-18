@@ -1,3 +1,5 @@
+import { JSX, h } from "preact";
+
 export type HTTPMethod = "GET" | "POST" | "DELETE";
 
 interface WrappedData<T> {
@@ -86,6 +88,33 @@ export class NotFoundError extends Error {
   }
 }
 
+export interface HTMLError extends Error {
+  html(): JSX.Element;
+}
+
+export class APIError extends Error implements HTMLError {
+  constructor(
+    private statusText: string,
+    private status: number,
+    private errors: string[]
+  ) {
+    super(`${statusText} (${status}):\n${errors.join("\n")}`);
+  }
+
+  html(): JSX.Element {
+    return (
+      <p class="mb-0">
+        <strong>
+          {this.statusText} ({this.status})
+        </strong>
+        {this.errors.map((e) => (
+          <pre class="mb-0 mt-1">{e.trimEnd()}</pre>
+        ))}
+      </p>
+    );
+  }
+}
+
 // removes leading and trailing slashes
 export const trimPath = (path: string): string =>
   path.replace(/^\/+|\/+$/g, "");
@@ -130,12 +159,12 @@ export class VaultClient {
         throw new NotFoundError();
       }
 
-      let errCause = "";
+      let errors = [];
       try {
-        const { errors }: { errors: string[] } = await resp.json();
-        errCause = errors.join("\n");
+        const info: { errors: string[] } = await resp.json();
+        errors = info.errors;
       } catch (e) {}
-      throw new Error(`${resp.statusText} (${resp.status}):\n${errCause}`);
+      throw new APIError(resp.statusText, resp.status, errors);
     }
 
     if (resp.status === 200) {

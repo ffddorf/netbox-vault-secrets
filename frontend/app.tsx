@@ -1,7 +1,13 @@
-import { FunctionComponent, h, render, Fragment } from "preact";
+import { FunctionComponent, h, render, Fragment, JSX } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-import { NotFoundError, SecretMetadata, trimPath, VaultClient } from "./client";
+import {
+  HTMLError,
+  NotFoundError,
+  SecretMetadata,
+  trimPath,
+  VaultClient,
+} from "./client";
 import { infoFromMeta, SecretInfo } from "./common";
 import { ConfirmDelete } from "./dialogue";
 import { EditForm } from "./edit";
@@ -51,6 +57,14 @@ export interface InitData {
   };
 }
 
+const displayError = (e: Error): JSX.Element => {
+  if (typeof (e as HTMLError).html === "function") {
+    return (e as HTMLError).html();
+  }
+
+  return <>{e.message || e.toString()}</>;
+};
+
 export const App: FunctionComponent<{ initData: InitData }> = ({
   initData: { config, objectPath },
 }) => {
@@ -58,7 +72,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingSecret, setDeletingSecret] = useState<SecretInfo | null>(null);
   const [secretList, updateSecretList] = useState<SecretInfo[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const secretsBasePath = `${trimPath(
     config.secret_path_prefix ?? "netbox"
@@ -73,7 +87,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
         })
         .catch((e) => {
           updateSecretList([]);
-          setError(e.message || e.toString());
+          setError(e);
         });
     }
   }, [client, secretsBasePath]);
@@ -125,7 +139,8 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
   if (error) {
     return (
       <div class="alert alert-danger" role="alert">
-        Unable to load secrets: {error}
+        Unable to load secrets:
+        {displayError(error)}
       </div>
     );
   }
