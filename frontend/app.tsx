@@ -12,7 +12,7 @@ import { infoFromMeta, SecretInfo } from "./common";
 import { ConfirmDelete } from "./dialogue";
 import { EditForm } from "./edit";
 import { List } from "./list";
-import { Login, logout, OidcConfig } from "./login";
+import { Login, OidcConfig } from "./login";
 
 const batch = (list: string[], batchSize: number): string[][] => {
   const result = [];
@@ -183,7 +183,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
     <>
       <Card
         onLogout={() => {
-          logout();
+          client.forgetAuthData();
           setClient(null);
         }}
         footer={

@@ -156,6 +156,8 @@ export interface OauthFlowParams {
   code: string;
 }
 
+const LOCAL_STORAGE_KEY_AUTH_DATA = "netbox-vault-auth-data";
+
 export class VaultClient {
   private baseUrl: string;
   private mounts: Mounts;
@@ -181,6 +183,34 @@ export class VaultClient {
     if (this.renewTimeout) {
       clearTimeout(this.renewTimeout);
     }
+  }
+
+  async loadAuthData(): Promise<VaultClient | null> {
+    const authDataSer = localStorage.getItem(LOCAL_STORAGE_KEY_AUTH_DATA);
+    if (!authDataSer) {
+      return null;
+    }
+
+    try {
+      const authInfo = JSON.parse(authDataSer);
+      const client = new VaultClient(this.baseUrl, this.mounts, authInfo);
+      await client.tokenLookupSelf();
+      await client.renewIfNeeded();
+      return client;
+    } catch (e) {
+      this.forgetAuthData();
+      console.info("Loading auth data failed with:", e);
+      return null;
+    }
+  }
+
+  async storeAuthData(): Promise<void> {
+    const authDataSer = JSON.stringify(this.authData);
+    localStorage.setItem(LOCAL_STORAGE_KEY_AUTH_DATA, authDataSer);
+  }
+
+  async forgetAuthData(): Promise<void> {
+    localStorage.removeItem(LOCAL_STORAGE_KEY_AUTH_DATA);
   }
 
   private async clientAuthFromInfo(info: AuthInfo): Promise<ClientAuthData> {

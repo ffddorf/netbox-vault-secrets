@@ -4,10 +4,6 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 import { displayError, OauthFlowParams, VaultClient } from "./client";
 import { Modal } from "./modal";
 
-const LOCAL_STORAGE_KEY_TOKEN = "netbox-vault-token";
-
-export const logout = () => localStorage.removeItem(LOCAL_STORAGE_KEY_TOKEN);
-
 export interface OidcConfig {
   mount_path?: string;
   roles?: Record<string, string>;
@@ -118,19 +114,15 @@ export const Login: FunctionComponent<{
   };
 
   useEffect(() => {
-    const savedToken = localStorage.getItem(LOCAL_STORAGE_KEY_TOKEN);
-    if (!savedToken) {
-      setIsLoading(false);
-      return;
-    }
-
-    const client = new VaultClient(baseUrl, mounts, savedToken);
-    client
-      .tokenLookupSelf()
-      .then(() => {
-        handleLogin(client);
+    const unauthClient = new VaultClient(baseUrl, mounts);
+    unauthClient
+      .loadAuthData()
+      .then((client) => {
+        if (client) {
+          handleLogin(client);
+        }
       })
-      .catch(logout)
+      .catch(() => {})
       .then(() => setIsLoading(false));
   }, [baseUrl, mounts]);
 
@@ -140,10 +132,8 @@ export const Login: FunctionComponent<{
       const client = new VaultClient(baseUrl, mounts, token);
       client
         .tokenLookupSelf()
-        .then(() => {
-          localStorage.setItem(LOCAL_STORAGE_KEY_TOKEN, token);
-          handleLogin(client);
-        })
+        .then(() => client.storeAuthData())
+        .then(() => handleLogin(client))
         .catch((e) => setLoginError(e));
     },
     [handleLogin, baseUrl, mounts]
@@ -159,7 +149,7 @@ export const Login: FunctionComponent<{
           const params = await startOauthFlow<OauthFlowParams>(auth_url);
           if (params) {
             const authedClient = await client.oidcCompleteFlow(params);
-            handleLogin(authedClient);
+            authedClient.storeAuthData().then(() => handleLogin(authedClient));
           }
           setLoginError(new Error("OAuth flow did not complete."));
         })
