@@ -37,7 +37,7 @@ jobs:
     if: "${{ github.ref_type == 'tag' }}"
     steps:
       - name: Fetch release artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: plugin
           path: dist
