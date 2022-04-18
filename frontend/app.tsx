@@ -1,15 +1,8 @@
-import {
-  FunctionComponent,
-  h,
-  render,
-  Fragment,
-  JSX,
-  ComponentChildren,
-} from "preact";
+import { FunctionComponent, h, Fragment, ComponentChildren } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
 import {
-  HTMLError,
+  displayError,
   NotFoundError,
   SecretMetadata,
   trimPath,
@@ -19,7 +12,7 @@ import { infoFromMeta, SecretInfo } from "./common";
 import { ConfirmDelete } from "./dialogue";
 import { EditForm } from "./edit";
 import { List } from "./list";
-import { Login, logout } from "./login";
+import { Login, OidcConfig } from "./login";
 
 const batch = (list: string[], batchSize: number): string[][] => {
   const result = [];
@@ -61,16 +54,10 @@ export interface InitData {
     api_url: string;
     kv_mount_path?: string;
     secret_path_prefix?: string;
+    login_methods?: string[];
+    oidc?: OidcConfig;
   };
 }
-
-const displayError = (e: Error): JSX.Element => {
-  if (typeof (e as HTMLError).html === "function") {
-    return (e as HTMLError).html();
-  }
-
-  return <>{e.message || e.toString()}</>;
-};
 
 const Card: FunctionComponent<{
   footer?: ComponentChildren;
@@ -185,6 +172,8 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
           handleLogin={setClient}
           baseUrl={config.api_url}
           kvMount={config.kv_mount_path ?? "/secret"}
+          loginMethods={config.login_methods ?? ["token"]}
+          oidc={config.oidc}
         />
       </Card>
     );
@@ -194,7 +183,7 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
     <>
       <Card
         onLogout={() => {
-          logout();
+          client.forgetAuthData();
           setClient(null);
         }}
         footer={

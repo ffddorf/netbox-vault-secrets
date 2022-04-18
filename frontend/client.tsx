@@ -1,4 +1,4 @@
-import { JSX, h } from "preact";
+import { JSX, h, Fragment } from "preact";
 
 export type HTTPMethod = "GET" | "POST" | "DELETE";
 
@@ -24,6 +24,18 @@ export interface TokenLookupSelf {
   policies: string[];
   renewable: boolean;
   ttl: number;
+}
+
+export interface AuthUrl {
+  auth_url: string;
+}
+
+export interface AuthInfo {
+  client_token: string;
+  accessor: string;
+  policies: string[];
+  lease_duration: number;
+  renewable: boolean;
 }
 
 export interface ListSecrets {
@@ -121,18 +133,134 @@ export const trimPath = (path: string): string =>
 
 export interface Mounts {
   kv: string;
+  oidc: string;
 }
+
+export interface ClientAuthData {
+  token: string;
+  expiresAt?: Date;
+}
+
+type Duration = number;
+
+// DateTime helpers
+const Millisecond: Duration = 1;
+const Second = (1000 * Millisecond) as Duration;
+const Minute = (60 * Second) as Duration;
+const add = (point: Date, distance: Duration): Date => {
+  return new Date(point.valueOf() + distance);
+};
+
+export interface OauthFlowParams {
+  state: string;
+  code: string;
+}
+
+const LOCAL_STORAGE_KEY_AUTH_DATA = "netbox-vault-auth-data";
 
 export class VaultClient {
   private baseUrl: string;
   private mounts: Mounts;
+  private authData?: ClientAuthData;
+  private renewTimeout?: NodeJS.Timeout;
 
-  constructor(baseUrl: string, mounts: Mounts, private token?: string) {
+  constructor(baseUrl: string, mounts: Mounts, auth?: ClientAuthData | string) {
     this.baseUrl = baseUrl.replace(/\/+$/, ""); // trim trailing slash
     this.mounts = Object.entries(mounts).reduce((acc, [k, v]) => {
       acc[k] = trimPath(v);
       return acc;
     }, {} as Mounts);
+
+    if (typeof auth === "string") {
+      this.authData = { token: auth };
+    } else {
+      this.authData = auth;
+      this.renewIfNeeded(); // takes care of scheduling a timer for renewal
+    }
+  }
+
+  cancel() {
+    if (this.renewTimeout) {
+      clearTimeout(this.renewTimeout);
+    }
+  }
+
+  async loadAuthData(): Promise<VaultClient | null> {
+    const authDataSer = localStorage.getItem(LOCAL_STORAGE_KEY_AUTH_DATA);
+    if (!authDataSer) {
+      return null;
+    }
+
+    try {
+      const authInfo = JSON.parse(authDataSer);
+      const client = new VaultClient(this.baseUrl, this.mounts, authInfo);
+      await client.tokenLookupSelf();
+      await client.renewIfNeeded();
+      return client;
+    } catch (e) {
+      this.forgetAuthData();
+      console.info("Loading auth data failed with:", e);
+      return null;
+    }
+  }
+
+  async storeAuthData(): Promise<void> {
+    const authDataSer = JSON.stringify(this.authData);
+    localStorage.setItem(LOCAL_STORAGE_KEY_AUTH_DATA, authDataSer);
+  }
+
+  async forgetAuthData(): Promise<void> {
+    localStorage.removeItem(LOCAL_STORAGE_KEY_AUTH_DATA);
+  }
+
+  private async clientAuthFromInfo(info: AuthInfo): Promise<ClientAuthData> {
+    const { client_token: token, renewable } = info;
+    if (!renewable) {
+      return { token };
+    }
+
+    const { expire_time } = await this.tokenLookup(token);
+    const expiresAt = new Date(expire_time);
+    return { token, expiresAt };
+  }
+
+  private async renewIfNeeded(): Promise<void> {
+    // noop if we can't renew
+    if (!this.authData?.expiresAt) {
+      return;
+    }
+
+    if (this.renewTimeout) {
+      // clear auto-renewal timeout
+      clearTimeout(this.renewTimeout);
+    }
+
+    // renew if expires in less than 5 minutes
+    if (this.authData.expiresAt < add(new Date(), 5 * Minute)) {
+      const info = await this.tokenRenewSelf();
+      this.authData = await this.clientAuthFromInfo(info);
+    }
+
+    // schedule an auto-renew timer
+    if (this.authData.expiresAt) {
+      const expiresInMs = this.authData.expiresAt.valueOf() - Date.now();
+      const renewTimeout = expiresInMs - 1 * Minute; // auto-renew 1 minute before expiry
+      if (renewTimeout > 0) {
+        this.renewTimeout = setTimeout(
+          () => this.renewIfNeeded(),
+          renewTimeout
+        );
+      }
+    }
+  }
+
+  private async requestWithRenew<R, B = null>(
+    path: string,
+    method?: HTTPMethod,
+    body?: B
+  ): Promise<R> {
+    await this.renewIfNeeded();
+    return this.request(path, method, body);
   }
 
   private async request<R, B = null>(
@@ -141,8 +269,8 @@ export class VaultClient {
     body?: B
   ): Promise<R> {
     const headers = {};
-    if (this.token) {
-      headers["X-Vault-Token"] = this.token;
+    if (this.authData?.token) {
+      headers["X-Vault-Token"] = this.authData?.token;
     }
 
     const init: RequestInit = {
@@ -172,29 +300,75 @@ export class VaultClient {
     }
   }
 
-  async tokenLookup(): Promise<TokenLookupSelf> {
+  async tokenLookup(token: string): Promise<TokenLookupSelf> {
+    const tempClient = new VaultClient(this.baseUrl, this.mounts, { token });
+    return tempClient.tokenLookupSelf();
+  }
+
+  async tokenLookupSelf(): Promise<TokenLookupSelf> {
     const info: WrappedData<TokenLookupSelf> = await this.request(
       "v1/auth/token/lookup-self"
     );
     return info.data;
   }
 
+  async tokenRenewSelf(): Promise<AuthInfo> {
+    const info: { auth: AuthInfo } = await this.request(
+      "v1/auth/token/renew-self",
+      "POST"
+    );
+    return info.auth;
+  }
+
+  async oidcAuthURL(redirect_uri: string, role?: string): Promise<AuthUrl> {
+    const info: WrappedData<AuthUrl> = await this.request(
+      `v1/${this.mounts.oidc}/oidc/auth_url`,
+      "POST",
+      {
+        role,
+        redirect_uri,
+      }
+    );
+    return info.data;
+  }
+
+  async oidcCallback(params: OauthFlowParams): Promise<AuthInfo> {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => qs.set(k, v));
+    const info: { auth: AuthInfo } = await this.request(
+      `v1/${this.mounts.oidc}/oidc/callback?${qs.toString()}`
+    );
+    return info.auth;
+  }
+
+  async oidcCompleteFlow(params: {
+    state: string;
+    code: string;
+  }): Promise<VaultClient> {
+    const info = await this.oidcCallback(params);
+    const auth = await this.clientAuthFromInfo(info);
+    return new VaultClient(this.baseUrl, this.mounts, auth);
+  }
+
   async listSecrets(path: string): Promise<ListSecrets> {
     path = trimPath(path);
     const reqPath = `v1/${this.mounts.kv}/metadata/${path}/?list=true`;
-    const secrets: WrappedData<ListSecrets> = await this.request(reqPath);
+    const secrets: WrappedData<ListSecrets> = await this.requestWithRenew(
+      reqPath
+    );
     return secrets.data;
   }
 
   async secretMetadata(path: string): Promise<SecretMetadata> {
-    const reqPath = `v1/${this.mounts.kv}/metadata/${trimPath(path)}`;
-    const meta: WrappedData<SecretMetadata> = await this.request(reqPath);
+    const meta: WrappedData<SecretMetadata> = await this.requestWithRenew(
+      `v1/${this.mounts.kv}/metadata/${trimPath(path)}`
+    );
     return meta.data;
   }
 
   async secretData(path: string): Promise<SecretData> {
     const reqPath = `v1/${this.mounts.kv}/data/${trimPath(path)}`;
-    const data: WrappedData<SecretData> = await this.request(reqPath);
+    const data: WrappedData<SecretData> = await this.requestWithRenew(reqPath);
     return data.data;
   }
 
@@ -203,9 +377,11 @@ export class VaultClient {
     meta: Record<string, string>
   ): Promise<void> {
     const metaReqPath = `v1/${this.mounts.kv}/metadata/${trimPath(path)}`;
-    await this.request<{}, SecretMetadataCreation>(metaReqPath, "POST", {
-      custom_metadata: meta,
-    });
+    await this.requestWithRenew<{}, SecretMetadataCreation>(
+      metaReqPath,
+      "POST",
+      { custom_metadata: meta }
+    );
   }
 
   async secretDataUpdate(
@@ -214,7 +390,7 @@ export class VaultClient {
     version?: number
   ): Promise<SecretCreationResponse> {
     const dataReqPath = `v1/${this.mounts.kv}/data/${trimPath(path)}`;
-    const creation = await this.request<
+    const creation = await this.requestWithRenew<
       WrappedData<SecretCreationResponse>,
       SecretDataCreation
     >(dataReqPath, "POST", {
@@ -226,6 +402,14 @@ export class VaultClient {
 
   async secretDelete(path: string): Promise<void> {
     const reqPath = `v1/${this.mounts.kv}/metadata/${trimPath(path)}`;
-    await this.request(reqPath, "DELETE");
+    await this.requestWithRenew(reqPath, "DELETE");
   }
 }
+
+export const displayError = (e: Error): JSX.Element => {
+  if (typeof (e as HTMLError).html === "function") {
+    return (e as HTMLError).html();
+  }
+
+  return <>{e.message || e.toString()}</>;
+};

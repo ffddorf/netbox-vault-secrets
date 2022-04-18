@@ -31,6 +31,13 @@ PLUGINS_CONFIG = {
         "api_url": "https://your-vault-deployment/", # can be relative
         "kv_mount_path": "/secret",  # optional
         "secret_path_prefix": "/netbox",  # optional
+        "login_methods": ["token", "oidc"], # optional, defaults to ["token"]
+        "oidc": {
+            "mount_path": "/auth/oidc", # optional
+            "roles": { # optional, will use `default_role` if missing
+                "demo": "Demo Provider", # maps role name to display name
+            }
+        },
     }
 }
 ```

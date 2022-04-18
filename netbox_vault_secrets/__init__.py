@@ -11,6 +11,7 @@ class VaultSecretsConfig(PluginConfig):
     version = meta['version']
     author = meta['author']
     author_email = meta['author-email']
+    base_url = 'vault'
 
     min_version = '3.0.0'
     required_settings = ['api_url']
@@ -18,6 +19,12 @@ class VaultSecretsConfig(PluginConfig):
         "kv_mount_path": "/secret",
         "secret_path_prefix": "/netbox",
     }
+
+    def ready(self):
+        from django.conf import settings
+        # todo: ugly hack, try to get it working with django defaults
+        settings.SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+        super().ready()
 
 
 config = VaultSecretsConfig
