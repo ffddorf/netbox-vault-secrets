@@ -1,7 +1,7 @@
 import { FunctionComponent, h, Fragment } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-import { displayError, VaultClient } from "./client";
+import { displayError, OauthFlowParams, VaultClient } from "./client";
 import { Modal } from "./modal";
 
 const LOCAL_STORAGE_KEY_TOKEN = "netbox-vault-token";
@@ -73,6 +73,35 @@ const receiveMessage = <T,>(): Promise<T> =>
     )
   );
 
+const checkLoop = async (checker: () => boolean, timeout: number) => {
+  while (true) {
+    await new Promise((resolve) => setTimeout(resolve, timeout));
+    if (checker()) {
+      return;
+    }
+  }
+};
+
+const POPUP_CHECK_INTERVAL = 500; // ms
+const startOauthFlow = async <T,>(url: string): Promise<T | undefined> => {
+  const respPromise = receiveMessage<T>();
+  const popup = window.open(url, "vaultOIDCWindow");
+  const closePromise = new Promise<undefined>((_, reject) =>
+    checkLoop(() => {
+      if (popup.closed) {
+        reject(new Error("Window closed without completing OAuth flow."));
+        return true;
+      }
+      return false;
+    }, POPUP_CHECK_INTERVAL)
+  );
+  // wait for popup to finish
+  const params = await Promise.race([respPromise, closePromise]);
+  popup.close();
+
+  return params;
+};
+
 export const Login: FunctionComponent<{
   handleLogin: (client: VaultClient) => void;
   baseUrl: string;
@@ -127,16 +156,12 @@ export const Login: FunctionComponent<{
       client
         .oidcAuthURL(`${location.origin}/plugins/vault/callback`, role)
         .then(async ({ auth_url }) => {
-          const resp = receiveMessage<{
-            state: string;
-            code: string;
-          }>();
-          const popup = window.open(auth_url, "vaultOIDCWindow");
-          const params = await resp; // wait for popup to finish
-          popup.close();
-
-          const authedClient = await client.oidcCompleteFlow(params);
-          handleLogin(authedClient);
+          const params = await startOauthFlow<OauthFlowParams>(auth_url);
+          if (params) {
+            const authedClient = await client.oidcCompleteFlow(params);
+            handleLogin(authedClient);
+          }
+          setLoginError(new Error("OAuth flow did not complete."));
         })
         .catch((e) => setLoginError(e.message || e.toString()));
     },

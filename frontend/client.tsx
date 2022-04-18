@@ -151,6 +151,11 @@ const add = (point: Date, distance: Duration): Date => {
   return new Date(point.valueOf() + distance);
 };
 
+export interface OauthFlowParams {
+  state: string;
+  code: string;
+}
+
 export class VaultClient {
   private baseUrl: string;
   private mounts: Mounts;
@@ -297,10 +302,7 @@ export class VaultClient {
     return info.data;
   }
 
-  async oidcCallback(params: {
-    state: string;
-    code: string;
-  }): Promise<AuthInfo> {
+  async oidcCallback(params: OauthFlowParams): Promise<AuthInfo> {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => qs.set(k, v));
     const info: { auth: AuthInfo } = await this.request(
