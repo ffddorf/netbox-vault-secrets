@@ -56,6 +56,25 @@ You can also set only the hostname of your Netbox deployment as an allowed origi
 
 Alternatively, proxy the Vault API on a subpath in your Netbox deployment, thereby moving it to the same origin, so no CORS setup is required.
 
+### Vault OIDC Role Setup
+
+The minimal settings required on the role used for OIDC with the plugin are:
+
+```sh
+vault write auth/oidc/role/<role name> allowed_redirect_uris="https://<your netbox>/plugins/vault/callback" ttl=1h
+```
+
+You should attach a policy similar to this to users who are going to use it:
+
+```hcl
+path "secret/metadata/netbox/*" {
+    capabilities = ["create", "read", "update", "delete", "list"]
+}
+path "secret/data/netbox/*" {
+    capabilities = ["create", "read", "update", "delete", "list"]
+}
+```
+
 ## License
 
 This code is licensed under the [2-clause BSD license](LICENSE.md).
