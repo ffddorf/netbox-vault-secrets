@@ -18,6 +18,18 @@ class VaultSecretsConfig(PluginConfig):
     default_settings = {
         "kv_mount_path": "/secret",
         "secret_path_prefix": "/netbox",
+        "content_types": [
+            {
+                "model": 'dcim.device'
+            },
+            {
+                "model": 'ipam.service'
+            },
+            {
+                "model": 'virtualization.virtualmachine',
+                "vault_path_slug": 'vm'
+            }
+        ]
     }
 
     def ready(self):
