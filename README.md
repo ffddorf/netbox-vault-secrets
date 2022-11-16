@@ -1,6 +1,6 @@
 # Hashicorp Vault Plugin for Netbox
 
-Provides convenient access to secrets stored in [Hashicorp Vault](https://www.vaultproject.io/) via the Netbox UI. You can attach secrets on a _Device_, _Virtual Machine_ or _Service_. The plugin is intended to serve as a possible replacement for the secrets functionality present in Netbox pre 3.0. The Netbox maintainers recommend replacing it with Vault.
+Provides convenient access to secrets stored in [Hashicorp Vault](https://www.vaultproject.io/) via the Netbox UI. By default, you can attach secrets on a _Device_, _Virtual Machine_ or _Service_. The plugin is intended to serve as a possible replacement for the secrets functionality present in Netbox pre 3.0. The Netbox maintainers recommend replacing it with Vault.
 
 It will add a card like this:
 
@@ -38,9 +38,38 @@ PLUGINS_CONFIG = {
                 "demo": "Demo Provider", # maps role name to display name
             }
         },
+        "content_types": [ # optional
+            {
+                "model": 'dcim.device'
+            },
+            {
+                "model": 'ipam.service'
+            },
+            {
+                "model": 'virtualization.virtualmachine',
+                "vault_path_slug": 'vm'
+            }
+        ]
     }
 }
 ```
+
+### Controlling which object types to support secrets on
+As mentioned, secrets are by default supported on the object types _Device_, _Virtual Machine_, and _Service_.
+It is possible to reduce or expand the list of supported object types by adding the "content_types" property to the plugin configuration as shown above.
+Each entry in the "content_types" list is validated against a list of allowed application_labels, which currently consists of:
+* circuits
+* dcim
+* extras
+* ipam
+* tenancy
+* virtualization
+* wireless
+
+If the entry does not match the allow_list (e.g. 'auth.group' would fail, since 'auth' is not allowed), Secrets will not be supported for that entry's object type (model).
+
+The entries have an optional field, "vault_path_slug" which can be used to override the default slug inferred from the model field.
+In the _PLUGINS_CONFIG_ example above, the slug for _virtualization.virtualmachine_ is overriden to 'vm', whereas the inferred slug would be 'virtualmachine'.
 
 ### Vault CORS settings
 
