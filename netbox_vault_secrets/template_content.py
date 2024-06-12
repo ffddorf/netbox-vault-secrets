@@ -30,4 +30,13 @@ class VaultVMSecrets(VaultSecretInserter):
     model = 'virtualization.virtualmachine'
 
 
-template_extensions = [VaultDeviceSecrets, VaultServiceSecrets, VaultVMSecrets]
+class VaultTenantSecrets(VaultSecretInserter):
+    vault_path_slug = "tenant"
+    model = "tenancy.tenant"
+
+class VaultSiteSecrets(VaultSecretInserter):
+    vault_path_slug = "site"
+    model = "dcim.site"
+
+template_extensions = [VaultDeviceSecrets, VaultServiceSecrets, VaultVMSecrets,VaultTenantSecrets,VaultSiteSecrets]
+
