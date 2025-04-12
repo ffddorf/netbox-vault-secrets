@@ -200,6 +200,9 @@ export const App: FunctionComponent<{ initData: InitData }> = ({
           getSecret={(id) => client.secretData(`${secretsBasePath}/${id}`)}
           handleEdit={setEditingId}
           handleDelete={setDeletingSecret}
+          handleCopy={(secret) => {
+            navigator.clipboard.writeText(secret.password);
+          }}
         />
       </Card>
       {editingId !== null && (
