@@ -26,7 +26,7 @@ jobs:
         id: names
         run: echo "::set-output name=artifact::$(python setup.py --fullname)"
       - name: Save Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: plugin
           path: dist/${{ steps.names.outputs.artifact }}.tar.gz
@@ -37,7 +37,7 @@ jobs:
     if: "${{ github.ref_type == 'tag' }}"
     steps:
       - name: Fetch release artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v8
         with:
           name: plugin
           path: dist
