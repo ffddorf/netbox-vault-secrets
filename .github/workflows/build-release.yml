@@ -9,7 +9,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: "14"
+          node-version: "24"
       - name: Setup Python
         uses: actions/setup-python@v3
         with:
